@@ -206,6 +206,15 @@ namespace OfficeDevPnP.Core {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CSOM request frequency exceeded usage limits. Sleeping for {0} seconds before retrying..
+        /// </summary>
+        internal static string ClientContextExtensions_ExecuteQueryRetry {
+            get {
+                return ResourceManager.GetString("ClientContextExtensions_ExecuteQueryRetry", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The passed argument is a zero-length string or contains only whitespace..
         /// </summary>
         internal static string Exception_Message_EmptyString_Arg {
@@ -310,6 +319,24 @@ namespace OfficeDevPnP.Core {
         internal static string FieldAndContentTypeExtensions_CreateFieldBase {
             get {
                 return ResourceManager.GetString("FieldAndContentTypeExtensions_CreateFieldBase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not find content type with id: {0}.
+        /// </summary>
+        internal static string FieldAndContentTypeExtensions_DeleteContentTypeById {
+            get {
+                return ResourceManager.GetString("FieldAndContentTypeExtensions_DeleteContentTypeById", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not find content type with name: {0}.
+        /// </summary>
+        internal static string FieldAndContentTypeExtensions_DeleteContentTypeByName {
+            get {
+                return ResourceManager.GetString("FieldAndContentTypeExtensions_DeleteContentTypeByName", resourceCulture);
             }
         }
         
@@ -638,6 +665,69 @@ namespace OfficeDevPnP.Core {
         internal static string Provisioning_Connectors_FileSystem_FileSaveFailed {
             get {
                 return ResourceManager.GetString("Provisioning_Connectors_FileSystem_FileSaveFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} deleted from folder {1}.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileDeleted {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} was not deleted from folder {1}. Error = {2}.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileDeleteFailed {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileDeleteFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} was not deleted from folder {1} because it was not available.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileDeleteNotFound {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileDeleteNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} not found in directory {1}. Exception = {2}.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileNotFound {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} retrieved from folder {1}.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileRetrieved {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileRetrieved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} saved to folder {1}.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileSaved {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileSaved", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File {0} was not saved to folder {1}. Error = {2}.
+        /// </summary>
+        internal static string Provisioning_Connectors_OpenXML_FileSaveFailed {
+            get {
+                return ResourceManager.GetString("Provisioning_Connectors_OpenXML_FileSaveFailed", resourceCulture);
             }
         }
         
@@ -1653,6 +1743,15 @@ namespace OfficeDevPnP.Core {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to PersistBrandingFiles is set to true.
+        /// </summary>
+        internal static string SiteToTemplateConversion_PersistBrandingFiles_is_set_to_true {
+            get {
+                return ResourceManager.GetString("SiteToTemplateConversion_PersistBrandingFiles_is_set_to_true", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to PersistComposedLookFiles is set to true.
         /// </summary>
         internal static string SiteToTemplateConversion_PersistComposedLookFiles_is_set_to_true {
@@ -1667,6 +1766,66 @@ namespace OfficeDevPnP.Core {
         internal static string SiteToTemplateConversion_ProgressDelegate_registered {
             get {
                 return ResourceManager.GetString("SiteToTemplateConversion_ProgressDelegate_registered", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to /* PnP SharePoint - Responsiveness */
+        ///
+        ///var PnPResponsiveApp = PnPResponsiveApp || {};
+        ///
+        ///PnPResponsiveApp.responsivizeSettings = function () {
+        ///	// return if no longer on Settings page
+        ///	if (window.location.href.indexOf(&apos;/settings.aspx&apos;) &lt; 0) return;
+        ///	
+        ///	// find the Settings root element, or wait if not available yet
+        ///	var settingsRoot = $(&quot;.ms-siteSettings-root&quot;);
+        ///	if (!settingsRoot.length) {
+        ///		setTimeout(PnPResponsiveApp.responsivizeSettings, 100);
+        ///        return;
+        ///	}
+        ///	
+        ///	$(&quot;.ms-siteSettings-root . [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string SP_Responsive_UI {
+            get {
+                return ResourceManager.GetString("SP_Responsive_UI", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .mobile-only {
+        ///    display: none;
+        ///}
+        ///
+        ///#sideNavBox, #contentRow, #siteIcon {
+        ///    -webkit-transition: all 400ms ease;
+        ///    -moz-transition: all 400ms ease;
+        ///    -ms-transition: all 400ms ease;
+        ///    -o-transition: all 400ms ease;
+        ///    transition: all 400ms ease;
+        ///}
+        ///
+        ///#contentBox {
+        ///	min-width: auto;
+        ///}
+        ///
+        ////* Make sure dialog windows don&apos;t break */
+        ///.ms-dialog #contentRow {
+        ///    margin-left: 0;
+        ///}
+        ///
+        ///.ms-dialog #contentBox {
+        ///    margin-top: 0;
+        ///}
+        ///
+        ///.ms-dialog #s4-bodyContainer {
+        ///    min-width: 0;
+        ///    f [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string SP_Responsive_UI_CSS {
+            get {
+                return ResourceManager.GetString("SP_Responsive_UI_CSS", resourceCulture);
             }
         }
         
@@ -1784,6 +1943,15 @@ namespace OfficeDevPnP.Core {
         internal static string TaxonomyExtension_TermSet0Id1DoesNotMatchSpecifiedId2 {
             get {
                 return ResourceManager.GetString("TaxonomyExtension_TermSet0Id1DoesNotMatchSpecifiedId2", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The taxonomy field {0} does not support multiple values..
+        /// </summary>
+        internal static string TaxonomyExtensions_Field_Is_Not_Multivalues {
+            get {
+                return ResourceManager.GetString("TaxonomyExtensions_Field_Is_Not_Multivalues", resourceCulture);
             }
         }
         

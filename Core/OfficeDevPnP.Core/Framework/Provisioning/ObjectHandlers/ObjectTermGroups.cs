@@ -39,7 +39,8 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                     var newGroup = false;
 
-                    TermGroup group = termStore.Groups.FirstOrDefault(g => g.Id == modelTermGroup.Id);
+                    TermGroup group = termStore.Groups.FirstOrDefault(
+                        g => g.Id == modelTermGroup.Id || g.Name == modelTermGroup.Name);
                     if (group == null)
                     {
                         if (modelTermGroup.Name == "Site Collection")
@@ -86,12 +87,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         var newTermSet = false;
                         if (!newGroup)
                         {
-                            set = group.TermSets.FirstOrDefault(ts => ts.Id == modelTermSet.Id);
-                            if (set == null)
-                            {
-                                set = group.TermSets.FirstOrDefault(ts => ts.Name == modelTermSet.Name);
-
-                            }
+                            set = group.TermSets.FirstOrDefault(ts => ts.Id == modelTermSet.Id || ts.Name == modelTermSet.Name);
                         }
                         if (set == null)
                         {
@@ -310,9 +306,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     // Find the site collection termgroup, if any
                     TaxonomySession session = TaxonomySession.GetTaxonomySession(web.Context);
                     var termStore = session.GetDefaultSiteCollectionTermStore();
-					web.Context.Load(termStore, t => t.Id, t => t.DefaultLanguage);
+					web.Context.Load(termStore, t => t.Id, t => t.DefaultLanguage, t => t.OrphanedTermsTermSet);
 					web.Context.ExecuteQueryRetry();
 
+                    var orphanedTermsTermSetId = termStore.OrphanedTermsTermSet.Id;
 					if (termStore.ServerObjectIsNull.Value)
 					{
 						termStore = session.GetDefaultKeywordsTermStore();
@@ -367,6 +364,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                         foreach (var termSet in termGroup.TermSets)
                         {
+                            // Do not include the orphan term set
+                            if (termSet.Id == orphanedTermsTermSetId) continue;
+
+                            // Extract all other term sets
                             var modelTermSet = new Model.TermSet();
                             modelTermSet.Name = termSet.Name;
                             if (!isSiteCollectionTermGroup)

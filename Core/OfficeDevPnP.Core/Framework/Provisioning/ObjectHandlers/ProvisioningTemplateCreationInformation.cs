@@ -3,9 +3,6 @@ using OfficeDevPnP.Core.Framework.Provisioning.Connectors;
 using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -14,6 +11,8 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         private ProvisioningTemplate baseTemplate;
         private FileConnectorBase fileConnector;
         private bool persistBrandingFiles = false;
+        private bool persistMultiLanguageResourceFiles = false;
+        private string resourceFilePrefix = "PnP_Resources";
         private bool includeAllTermGroups = false;
         private bool includeSiteCollectionTermGroup = false;
         private bool includeSiteGroups = false;
@@ -21,7 +20,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         private List<String> propertyBagPropertiesToPreserve;
         private bool persistPublishingFiles = false;
         private bool includeNativePublishingFiles = false;
-
+        private List<ExtensibilityHandler> extensibilityHandlers = new List<ExtensibilityHandler>();
         private Handlers handlersToProcess = Handlers.All;
 
         public ProvisioningProgressDelegate ProgressDelegate { get; set; }
@@ -60,6 +59,33 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             set
             {
                 this.fileConnector = value;
+            }
+        }
+
+        /// <summary>
+        /// Will create resource files named "PnP_Resource_[LCID].resx for every supported language. The files will be persisted to the location specified by the connector
+        /// </summary>
+        public bool PersistMultiLanguageResources
+        {
+            get
+            {
+                return this.persistMultiLanguageResourceFiles;
+            }
+            set
+            {
+                this.persistMultiLanguageResourceFiles = value;
+            }
+        }
+
+        public string ResourceFilePrefix
+        {
+            get
+            {
+                return this.resourceFilePrefix;
+            }
+            set
+            {
+                this.resourceFilePrefix = value;
             }
         }
 
@@ -173,6 +199,19 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             set
             {
                 handlersToProcess = value;
+            }
+        }
+
+        public List<ExtensibilityHandler> ExtensibilityHandlers
+        {
+            get
+            {
+                return extensibilityHandlers;
+            }
+
+            set
+            {
+                extensibilityHandlers = value;
             }
         }
     }

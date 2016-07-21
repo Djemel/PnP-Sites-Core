@@ -142,7 +142,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 existingContentType.NewFormUrl = parser.ParseString(templateContentType.NewFormUrl);
                 isDirty = true;
             }
-#if !CLIENTSDKV15
+#if !ONPREMISES
             if (templateContentType.Name.ContainsResourceToken())
             {
                 existingContentType.NameResource.SetUserResourceValue(templateContentType.Name, parser);
@@ -242,13 +242,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             // Add new CTs
             parser.AddToken(new ContentTypeIdToken(web, name, id));
 
-#if !CLIENTSDKV15
+#if !ONPREMISES
             // Set resources
             if (templateContentType.Name.ContainsResourceToken())
             {
                 createdCT.NameResource.SetUserResourceValue(templateContentType.Name, parser);
             }
-            if(templateContentType.Description.ContainsResourceToken())
+            if (templateContentType.Description.ContainsResourceToken())
             {
                 createdCT.DescriptionResource.SetUserResourceValue(templateContentType.Description, parser);
             }
@@ -258,8 +258,6 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             //In this case the new Content Type has all field of the original Content Type and missing fields 
             //will be added at the end. To fix this issue we ordering the fields once more.
             createdCT.FieldLinks.Reorder(templateContentType.FieldRefs.Select(fld => fld.Name).ToArray());
-            createdCT.Update(true);
-            web.Context.ExecuteQueryRetry();
 
             createdCT.ReadOnly = templateContentType.ReadOnly;
             createdCT.Hidden = templateContentType.Hidden;
@@ -280,6 +278,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             {
                 createdCT.DisplayFormUrl = templateContentType.DisplayFormUrl;
             }
+
+            createdCT.Update(true);
+            web.Context.ExecuteQueryRetry();
 
             // If the CT is a DocumentSet
             if (templateContentType.DocumentSetTemplate != null)
@@ -353,7 +354,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     return template;
                 }
 
-                template.ContentTypes.AddRange(GetEntities(web, scope));
+                template.ContentTypes.AddRange(GetEntities(web, scope, creationInfo, template));
 
                 // If a base template is specified then use that one to "cleanup" the generated template model
                 if (creationInfo.BaseTemplate != null)
@@ -364,7 +365,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             return template;
         }
 
-        private IEnumerable<ContentType> GetEntities(Web web, PnPMonitoredScope scope)
+        private IEnumerable<ContentType> GetEntities(Web web, PnPMonitoredScope scope, ProvisioningTemplateCreationInformation creationInfo, ProvisioningTemplate template)
         {
             var cts = web.ContentTypes;
             web.Context.Load(cts, ctCollection => ctCollection.IncludeWithDefaultProperties(ct => ct.FieldLinks));
@@ -399,6 +400,20 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         EditFormUrl = ct.EditFormUrl,
                         NewFormUrl = ct.NewFormUrl,
                     };
+
+                    if (creationInfo.PersistMultiLanguageResources)
+                    {
+#if !SP2013
+                        if (UserResourceExtensions.PersistResourceValue(ct.NameResource, string.Format("ContentType_{0}_Title", ct.Name.Replace(" ", "_")), template, creationInfo))
+                        {
+                            newCT.Name = string.Format("{{res:ContentType_{0}_Title}}", ct.Name.Replace(" ", "_"));
+                        }
+                        if (UserResourceExtensions.PersistResourceValue(ct.DescriptionResource, string.Format("ContentType_{0}_Description", ct.Name.Replace(" ", "_")), template, creationInfo))
+                        {
+                            newCT.Description = string.Format("{{res:ContentType_{0}_Description}}", ct.Name.Replace(" ", "_"));
+                        }
+#endif
+                    }
 
                     // If the Content Type is a DocumentSet
                     if (Microsoft.SharePoint.Client.DocumentSet.DocumentSetTemplate.IsChildOfDocumentSetContentType(web.Context, ct).Value ||

@@ -4,6 +4,7 @@ using Microsoft.SharePoint.Client;
 using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using OfficeDevPnP.Core.Diagnostics;
 using OfficeDevPnP.Core.Framework.Provisioning.Extensibility;
+using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.Extensions;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -47,9 +48,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     {
                         scope.LogDebug(CoreResources.SiteToTemplateConversion_IncludeSiteCollectionTermGroup_is_set_to_true);
                     }
-                    if (creationInfo.PersistComposedLookFiles)
+                    if (creationInfo.PersistBrandingFiles)
                     {
-                        scope.LogDebug(CoreResources.SiteToTemplateConversion_PersistComposedLookFiles_is_set_to_true);
+                        scope.LogDebug(CoreResources.SiteToTemplateConversion_PersistBrandingFiles_is_set_to_true);
                     }
                 }
                 else
@@ -87,11 +88,16 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 if (creationInfo.HandlersToProcess.HasFlag(Handlers.Publishing)) objectHandlers.Add(new ObjectPublishing());
                 if (creationInfo.HandlersToProcess.HasFlag(Handlers.Workflows)) objectHandlers.Add(new ObjectWorkflows());
                 if (creationInfo.HandlersToProcess.HasFlag(Handlers.WebSettings)) objectHandlers.Add(new ObjectWebSettings());
+                objectHandlers.Add(new ObjectLocalization()); // Always add this one, check is done in the handler
+                if (creationInfo.HandlersToProcess.HasFlag(Handlers.ExtensibilityProviders)) objectHandlers.Add(new ObjectExtensibilityHandlers());
+                
                 objectHandlers.Add(new ObjectRetrieveTemplateInfo());
 
                 int step = 1;
 
                 var count = objectHandlers.Count(o => o.ReportProgress && o.WillExtract(web, template, creationInfo));
+
+                web.EnsureProperty(w => w.Url);
 
                 foreach (var handler in objectHandlers)
                 {
@@ -106,9 +112,19 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                             progressDelegate(handler.Name, step, count);
                             step++;
                         }
-                        template = handler.ExtractObjects(web, template, creationInfo);
+
+                        using (var handlerContext = web.Context.Clone(web.Url))
+                        {
+                            template = handler.ExtractObjects(handlerContext.Web, template, creationInfo);
+                        }
                     }
                 }
+
+                //if (creationInfo.PersistMultiLanguageResources)
+                //{
+                //    template = UserResourceExtensions.SaveResourceValues(template, creationInfo);
+                //}
+
                 return template;
             }
         }
@@ -172,14 +188,21 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.SearchSettings)) objectHandlers.Add(new ObjectSearchSettings());
                 if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.Workflows)) objectHandlers.Add(new ObjectWorkflows());
                 if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.PropertyBagEntries)) objectHandlers.Add(new ObjectPropertyBagEntry());
-                if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.ExtensibilityProviders)) objectHandlers.Add(new ObjectExtensibilityProviders());
                 if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.WebSettings)) objectHandlers.Add(new ObjectWebSettings());
-                objectHandlers.Add(new ObjectPersistTemplateInfo());
+                objectHandlers.Add(new ObjectLocalization()); // Always add this one, check is done in the handler
+                if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.ExtensibilityProviders)) objectHandlers.Add(new ObjectExtensibilityHandlers());
+
+                // Only persist template information in case this flag is set: this will allow the engine to 
+                // work with lesser permissions
+                if (provisioningInfo.PersistTemplateInfo)
+                {
+                    objectHandlers.Add(new ObjectPersistTemplateInfo());
+                }
 
                 var tokenParser = new TokenParser(web, template);
                 if (provisioningInfo.HandlersToProcess.HasFlag(Handlers.ExtensibilityProviders))
                 {
-                    var extensibilityHandler = objectHandlers.OfType<ObjectExtensibilityProviders>().First();
+                    var extensibilityHandler = objectHandlers.OfType<ObjectExtensibilityHandlers>().First();
                     extensibilityHandler.AddExtendedTokens(web, template, tokenParser, provisioningInfo);
                 }
 

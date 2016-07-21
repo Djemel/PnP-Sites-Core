@@ -49,15 +49,32 @@ namespace Microsoft.SharePoint.Client.Tests
             clientContext.Load(props);
             clientContext.ExecuteQueryRetry();
 
-            if (props.FieldValues.ContainsKey(_key))
-            {
-                props[_key] = null;
-                props.FieldValues.Remove(_key);
+            // Implement cleanup mechanism that cleans test stranglers + also cleans up the NoMobileMapping key that's generated per created sub site
+            List<string> keysToDelete = new List<string>(10);
+            foreach(var prop in props.FieldValues)
+            {                
+                if (prop.Key.StartsWith("TEST_KEY_", StringComparison.InvariantCultureIgnoreCase) ||
+                    prop.Key.StartsWith("TEST_VALUE_", StringComparison.InvariantCultureIgnoreCase) ||
+                    prop.Key.StartsWith("__NoMobileMapping", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    keysToDelete.Add(prop.Key);
+                }
             }
-            if (props.FieldValues.ContainsKey(INDEXED_PROPERTY_KEY))
+
+            int batch = 0;
+            foreach (string key in keysToDelete)
             {
-                props[INDEXED_PROPERTY_KEY] = null;
-                props.FieldValues.Remove(INDEXED_PROPERTY_KEY);
+                props[key] = null;
+                props.FieldValues.Remove(key);
+                batch++;
+
+                // send cleanup in batches of 50 to the server
+                if (batch >= 50)
+                {
+                    clientContext.Web.Update();
+                    clientContext.ExecuteQueryRetry();
+                    batch = 0;
+                }
             }
             clientContext.Web.Update();
             clientContext.ExecuteQueryRetry();
@@ -67,7 +84,7 @@ namespace Microsoft.SharePoint.Client.Tests
             clientContext.ExecuteQueryRetry();
 
             string appToRemove = APPNAME;
-#if CLIENTSDKV15
+#if ONPREMISES
             appToRemove += "15";
 #endif
 
@@ -315,7 +332,7 @@ namespace Microsoft.SharePoint.Client.Tests
             Assert.IsInstanceOfType(instances, typeof(ClientObjectList<AppInstance>), "Incorrect return value");
             int instanceCount = instances.Count;
 
-#if !CLIENTSDKV15
+#if !ONPREMISES
             byte[] appToLoad = OfficeDevPnP.Core.Tests.Properties.Resources.HelloWorldApp;
 #else
             byte[] appToLoad = OfficeDevPnP.Core.Tests.Properties.Resources.HelloWorldApp15;
@@ -340,7 +357,7 @@ namespace Microsoft.SharePoint.Client.Tests
             Assert.IsInstanceOfType(instances, typeof(ClientObjectList<AppInstance>), "Incorrect return value");
             int instanceCount = instances.Count;
 
-#if !CLIENTSDKV15
+#if !ONPREMISES
             byte[] appToLoad = OfficeDevPnP.Core.Tests.Properties.Resources.HelloWorldApp;
 #else
             byte[] appToLoad = OfficeDevPnP.Core.Tests.Properties.Resources.HelloWorldApp15;
@@ -354,7 +371,7 @@ namespace Microsoft.SharePoint.Client.Tests
 
             string appToRemove = APPNAME;
 
-#if CLIENTSDKV15
+#if ONPREMISES
             appToRemove += "15";
 #endif
 

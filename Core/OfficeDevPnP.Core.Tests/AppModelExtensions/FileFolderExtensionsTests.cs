@@ -184,10 +184,7 @@ namespace OfficeDevPnP.Core.Tests.AppModelExtensions
         {
             var fileName1 = System.IO.Path.GetFileName(TestFilePath1);
             var file1 = folder.GetFile(fileName1);
-            Assert.AreEqual(fileName1, file1.Name, "Existing file could not be found.");
-
-            var file2 = folder.GetFile(fileName1.ToUpperInvariant());
-            Assert.AreEqual(fileName1, file2.Name, "Existing file could not be found: case-sensitive.");
+            Assert.AreEqual(fileName1, file1.Name, "Existing file could be found.");
 
             var fileName2 = System.IO.Path.GetFileName(TestFilePath2);
             var file3 = folder.GetFile(fileName2);
@@ -258,6 +255,60 @@ namespace OfficeDevPnP.Core.Tests.AppModelExtensions
 
             clientContext.ExecuteQueryRetry();
             Assert.AreEqual(testFolder.ServerRelativeUrl, String.Format("{0}/{1}/{2}",clientContext.Web.ServerRelativeUrl, DocumentLibraryName, folderName));
+        }
+
+        [TestMethod]
+        public void EnsureWebRootFolderPathTest()
+        {
+            string folderName = string.Empty;
+
+            Folder rootFolder = clientContext.Web.EnsureFolderPath(folderName);
+
+            Assert.AreEqual(clientContext.Web.ServerRelativeUrl.TrimEnd('/'), rootFolder.ServerRelativeUrl.TrimEnd('/'));
+        }
+
+        [TestMethod]
+        public void EnsureFolderPathTest()
+        {
+            string folderName = "test_path";
+
+            var testFolder = clientContext.Web.EnsureFolderPath(folderName);
+
+            Assert.AreEqual(string.Format("{0}/{1}", clientContext.Web.ServerRelativeUrl.TrimEnd('/'), folderName), testFolder.ServerRelativeUrl.TrimEnd('/'));
+        }
+
+        [TestMethod]
+        public void EnsureLibraryRootFolderPathTest()
+        {
+            string folderName = DocumentLibraryName;
+
+            Folder libraryRootFolder = clientContext.Web.EnsureFolderPath(folderName);
+
+            Assert.AreEqual(documentLibrary.RootFolder.ServerRelativeUrl.TrimEnd('/'), libraryRootFolder.ServerRelativeUrl.TrimEnd('/'));
+        }
+
+        [TestMethod]
+        public void EnsureLibraryFolderPathTest()
+        {
+            string folderName = "test_path";
+            string folderPath = string.Format("{0}/{1}", DocumentLibraryName, folderName);
+
+            Folder libraryFolder = clientContext.Web.EnsureFolderPath(folderPath);
+
+            clientContext.Load(documentLibrary, d => d.RootFolder, d => d.RootFolder.Folders);
+            clientContext.ExecuteQueryRetry();
+            ensureLibraryFolderTest = null;
+            foreach (Folder existingFolder in documentLibrary.RootFolder.Folders)
+            {
+                if (string.Equals(existingFolder.Name, folderName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    ensureLibraryFolderTest = existingFolder;
+                    break;
+                }
+            }
+
+            Assert.IsNotNull(ensureLibraryFolderTest);
+            Assert.AreEqual(ensureLibraryFolderTest.ServerRelativeUrl.TrimEnd('/'), libraryFolder.ServerRelativeUrl.TrimEnd('/'));
         }
         #endregion
 
