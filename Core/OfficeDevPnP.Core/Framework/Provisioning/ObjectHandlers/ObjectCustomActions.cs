@@ -68,8 +68,11 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 {
                     caExists = web.CustomActionExists(customAction.Name);
                 }
-                if (!caExists)
+
+                // If the CustomAction does not exist and we don't have to remove it
+                if (!caExists && !customAction.Remove)
                 {
+                    // Then we add it to the target
                     var customActionEntity = new CustomActionEntity()
                     {
                         CommandUIExtension = customAction.CommandUIExtension != null ? parser.ParseString(customAction.CommandUIExtension.ToString()) : string.Empty,
@@ -94,8 +97,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     {
                         scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_CustomActions_Adding_custom_action___0___to_scope_Site, customActionEntity.Name);
                         site.AddCustomAction(customActionEntity);
-#if !CLIENTSDKV15
-                        if (customAction.Title.ContainsResourceToken() || customAction.Description.ContainsResourceToken())
+#if !ONPREMISES
+                        if ((!string.IsNullOrEmpty(customAction.Title) && customAction.Title.ContainsResourceToken()) ||
+                            (!string.IsNullOrEmpty(customAction.Description) && customAction.Description.ContainsResourceToken()))
                         {
                             var uca = site.GetCustomActions().Where(uc => uc.Name == customAction.Name).FirstOrDefault();
                             SetCustomActionResourceValues(parser, customAction, uca);
@@ -106,7 +110,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     {
                         scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_CustomActions_Adding_custom_action___0___to_scope_Web, customActionEntity.Name);
                         web.AddCustomAction(customActionEntity);
-#if !CLIENTSDKV15
+#if !ONPREMISES
                         if (customAction.Title.ContainsResourceToken() || customAction.Description.ContainsResourceToken())
                         {
                             var uca = web.GetCustomActions().Where(uc => uc.Name == customAction.Name).FirstOrDefault();
@@ -128,107 +132,124 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     }
                     if (existingCustomAction != null)
                     {
-                        var isDirty = false;
-
-                        if (customAction.CommandUIExtension != null)
+                        // If we have to remove the existing CustomAction
+                        if (customAction.Remove)
                         {
-                            if (existingCustomAction.CommandUIExtension != parser.ParseString(customAction.CommandUIExtension.ToString()))
-                            {
-                                scope.LogPropertyUpdate("CommandUIExtension");
-                                existingCustomAction.CommandUIExtension = parser.ParseString(customAction.CommandUIExtension.ToString());
-                                isDirty = true;
-                            }
-                        }
-
-                        if (existingCustomAction.Description != customAction.Description)
-                        {
-                            scope.LogPropertyUpdate("Description");
-                            existingCustomAction.Description = customAction.Description;
-                            isDirty = true;
-                        }
-#if !CLIENTSDKV15
-                        if (customAction.Description.ContainsResourceToken())
-                        {
-                            if (existingCustomAction.DescriptionResource.SetUserResourceValue(customAction.Description, parser))
-                            {
-                                isDirty = true;
-                            }
-                        }
-#endif
-                        if (existingCustomAction.Group != customAction.Group)
-                        {
-                            scope.LogPropertyUpdate("Group");
-                            existingCustomAction.Group = customAction.Group;
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.ImageUrl != parser.ParseString(customAction.ImageUrl))
-                        {
-                            scope.LogPropertyUpdate("ImageUrl");
-                            existingCustomAction.ImageUrl = parser.ParseString(customAction.ImageUrl);
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.Location != customAction.Location)
-                        {
-                            scope.LogPropertyUpdate("Location");
-                            existingCustomAction.Location = customAction.Location;
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.RegistrationId != customAction.RegistrationId)
-                        {
-                            scope.LogPropertyUpdate("RegistrationId");
-                            existingCustomAction.RegistrationId = customAction.RegistrationId;
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.RegistrationType != customAction.RegistrationType)
-                        {
-                            scope.LogPropertyUpdate("RegistrationType");
-                            existingCustomAction.RegistrationType = customAction.RegistrationType;
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.ScriptBlock != parser.ParseString(customAction.ScriptBlock))
-                        {
-                            scope.LogPropertyUpdate("ScriptBlock");
-                            existingCustomAction.ScriptBlock = parser.ParseString(customAction.ScriptBlock);
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.ScriptSrc != parser.ParseString(customAction.ScriptSrc, "~site", "~sitecollection"))
-                        {
-                            scope.LogPropertyUpdate("ScriptSrc");
-                            existingCustomAction.ScriptSrc = parser.ParseString(customAction.ScriptSrc, "~site", "~sitecollection");
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.Sequence != customAction.Sequence)
-                        {
-                            scope.LogPropertyUpdate("Sequence");
-                            existingCustomAction.Sequence = customAction.Sequence;
-                            isDirty = true;
-                        }
-                        if (existingCustomAction.Title != parser.ParseString(customAction.Title))
-                        {
-                            scope.LogPropertyUpdate("Title");
-                            existingCustomAction.Title = parser.ParseString(customAction.Title);
-                            isDirty = true;
-                        }
-#if !CLIENTSDKV15
-                        if (customAction.Title.ContainsResourceToken())
-                        {
-                            if (existingCustomAction.TitleResource.SetUserResourceValue(customAction.Title, parser))
-                            {
-                                isDirty = true;
-                            }
-
-                        }
-#endif
-                        if (existingCustomAction.Url != parser.ParseString(customAction.Url))
-                        {
-                            scope.LogPropertyUpdate("Url");
-                            existingCustomAction.Url = parser.ParseString(customAction.Url);
-                            isDirty = true;
-                        }
-                        if (isDirty)
-                        {
-                            existingCustomAction.Update();
+                            // We simply remove it
+                            existingCustomAction.DeleteObject();
                             existingCustomAction.Context.ExecuteQueryRetry();
+                        }
+                        else
+                        {
+                            var isDirty = false;
+
+                            // Otherwise we update it
+                            if (customAction.CommandUIExtension != null)
+                            {
+                                if (existingCustomAction.CommandUIExtension != parser.ParseString(customAction.CommandUIExtension.ToString()))
+                                {
+                                    scope.LogPropertyUpdate("CommandUIExtension");
+                                    existingCustomAction.CommandUIExtension = parser.ParseString(customAction.CommandUIExtension.ToString());
+                                    isDirty = true;
+                                }
+                            }
+                            else
+                            {
+                                // Required to allow for a delta action to blank out the CommandUIExtension attribute
+                                existingCustomAction.CommandUIExtension = null;
+                            }
+
+                            if (existingCustomAction.Description != customAction.Description)
+                            {
+                                scope.LogPropertyUpdate("Description");
+                                existingCustomAction.Description = customAction.Description;
+                                isDirty = true;
+                            }
+#if !ONPREMISES
+                            if (customAction.Description.ContainsResourceToken())
+                            {
+                                if (existingCustomAction.DescriptionResource.SetUserResourceValue(customAction.Description, parser))
+                                {
+                                    isDirty = true;
+                                }
+                            }
+#endif
+                            if (existingCustomAction.Group != customAction.Group)
+                            {
+                                scope.LogPropertyUpdate("Group");
+                                existingCustomAction.Group = customAction.Group;
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.ImageUrl != parser.ParseString(customAction.ImageUrl))
+                            {
+                                scope.LogPropertyUpdate("ImageUrl");
+                                existingCustomAction.ImageUrl = parser.ParseString(customAction.ImageUrl);
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.Location != customAction.Location)
+                            {
+                                scope.LogPropertyUpdate("Location");
+                                existingCustomAction.Location = customAction.Location;
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.RegistrationId != customAction.RegistrationId)
+                            {
+                                scope.LogPropertyUpdate("RegistrationId");
+                                existingCustomAction.RegistrationId = customAction.RegistrationId;
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.RegistrationType != customAction.RegistrationType)
+                            {
+                                scope.LogPropertyUpdate("RegistrationType");
+                                existingCustomAction.RegistrationType = customAction.RegistrationType;
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.ScriptBlock != parser.ParseString(customAction.ScriptBlock))
+                            {
+                                scope.LogPropertyUpdate("ScriptBlock");
+                                existingCustomAction.ScriptBlock = parser.ParseString(customAction.ScriptBlock);
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.ScriptSrc != parser.ParseString(customAction.ScriptSrc, "~site", "~sitecollection"))
+                            {
+                                scope.LogPropertyUpdate("ScriptSrc");
+                                existingCustomAction.ScriptSrc = parser.ParseString(customAction.ScriptSrc, "~site", "~sitecollection");
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.Sequence != customAction.Sequence)
+                            {
+                                scope.LogPropertyUpdate("Sequence");
+                                existingCustomAction.Sequence = customAction.Sequence;
+                                isDirty = true;
+                            }
+                            if (existingCustomAction.Title != parser.ParseString(customAction.Title))
+                            {
+                                scope.LogPropertyUpdate("Title");
+                                existingCustomAction.Title = parser.ParseString(customAction.Title);
+                                isDirty = true;
+                            }
+#if !ONPREMISES
+                            if (customAction.Title.ContainsResourceToken())
+                            {
+                                if (existingCustomAction.TitleResource.SetUserResourceValue(customAction.Title, parser))
+                                {
+                                    isDirty = true;
+                                }
+
+                            }
+#endif
+                            if (existingCustomAction.Url != parser.ParseString(customAction.Url))
+                            {
+                                scope.LogPropertyUpdate("Url");
+                                existingCustomAction.Url = parser.ParseString(customAction.Url);
+                                isDirty = true;
+                            }
+
+                            if (isDirty)
+                            {
+                                existingCustomAction.Update();
+                                existingCustomAction.Context.ExecuteQueryRetry();
+                            }
                         }
                     }
                 }
@@ -240,15 +261,15 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             if (uca != null)
             {
                 bool isDirty = false;
-#if !CLIENTSDKV15
-                if (customAction.Title.ContainsResourceToken())
+#if !ONPREMISES
+                if (!string.IsNullOrEmpty(customAction.Title) && customAction.Title.ContainsResourceToken())
                 {
                     if (uca.TitleResource.SetUserResourceValue(customAction.Title, parser))
                     {
                         isDirty = true;
                     }
                 }
-                if (customAction.Description.ContainsResourceToken())
+                if (!string.IsNullOrEmpty(customAction.Description) && customAction.Description.ContainsResourceToken())
                 {
                     if (uca.DescriptionResource.SetUserResourceValue(customAction.Description, parser))
                     {
@@ -277,7 +298,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 foreach (var customAction in webCustomActions)
                 {
                     scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_CustomActions_Adding_web_scoped_custom_action___0___to_template, customAction.Name);
-                    customActions.WebCustomActions.Add(CopyUserCustomAction(customAction));
+                    customActions.WebCustomActions.Add(CopyUserCustomAction(customAction, creationInfo,template));
                 }
 
                 // if this is a sub site then we're not creating entities for site collection scoped custom actions
@@ -286,7 +307,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     foreach (var customAction in siteCustomActions)
                     {
                         scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_CustomActions_Adding_site_scoped_custom_action___0___to_template, customAction.Name);
-                        customActions.SiteCustomActions.Add(CopyUserCustomAction(customAction));
+                        customActions.SiteCustomActions.Add(CopyUserCustomAction(customAction, creationInfo,template));
                     }
                 }
 
@@ -331,7 +352,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             return template;
         }
 
-        private CustomAction CopyUserCustomAction(UserCustomAction userCustomAction)
+        private CustomAction CopyUserCustomAction(UserCustomAction userCustomAction, ProvisioningTemplateCreationInformation creationInfo, ProvisioningTemplate template)
         {
             var customAction = new CustomAction();
             customAction.Description = userCustomAction.Description;
@@ -351,6 +372,24 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             customAction.CommandUIExtension = !System.String.IsNullOrEmpty(userCustomAction.CommandUIExtension) ?
                 XElement.Parse(userCustomAction.CommandUIExtension) : null;
 
+#if !ONPREMISES
+            if (creationInfo.PersistMultiLanguageResources)
+            {
+                var resourceKey = userCustomAction.Name.Replace(" ", "_");
+
+                if (UserResourceExtensions.PersistResourceValue(userCustomAction.TitleResource, string.Format("CustomAction_{0}_Title", resourceKey), template, creationInfo))
+                {
+                    var customActionTitle = string.Format("{{res:CustomAction_{0}_Title}}", resourceKey);
+                    customAction.Title = customActionTitle;
+
+                }
+                if (UserResourceExtensions.PersistResourceValue(userCustomAction.DescriptionResource, string.Format("CustomAction_{0}_Description", resourceKey), template, creationInfo))
+                {
+                    var customActionDescription = string.Format("{{res:CustomAction_{0}_Description}}", resourceKey);
+                    customAction.Description = customActionDescription;
+                }
+            }
+#endif
             return customAction;
         }
 

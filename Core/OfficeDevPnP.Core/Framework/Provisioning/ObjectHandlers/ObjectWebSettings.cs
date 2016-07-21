@@ -8,6 +8,7 @@ using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using OfficeDevPnP.Core.Diagnostics;
 using OfficeDevPnP.Core.Framework.Provisioning.Connectors;
 using System.IO;
+using OfficeDevPnP.Core.Utilities;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -23,7 +24,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             using (var scope = new PnPMonitoredScope(this.Name))
             {
                 web.EnsureProperties(
-#if !CLIENTSDKV15
+#if !ONPREMISES
                     w => w.NoCrawl,
                     w => w.RequestAccessEmail,
 #endif
@@ -35,7 +36,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     w => w.Url);
 
                 var webSettings = new WebSettings();
-#if !CLIENTSDKV15
+#if !ONPREMISES
                 webSettings.NoCrawl = web.NoCrawl;
                 webSettings.RequestAccessEmail = web.RequestAccessEmail;
 #endif
@@ -102,7 +103,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             var webServerUrl = web.EnsureProperty(w => w.Url);
             var serverUri = new Uri(webServerUrl);
             var serverUrl = string.Format("{0}://{1}", serverUri.Scheme, serverUri.Authority);
-            var fullUri = new Uri(System.UrlUtility.Combine(serverUrl, serverRelativeUrl));
+            var fullUri = new Uri(UrlUtility.Combine(serverUrl, serverRelativeUrl));
 
             var folderPath = fullUri.Segments.Take(fullUri.Segments.Count() - 1).ToArray().Aggregate((i, x) => i + x).TrimEnd('/');
             var fileName = fullUri.Segments[fullUri.Segments.Count() - 1];
@@ -195,21 +196,21 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 if (template.WebSettings != null)
                 {
                     var webSettings = template.WebSettings;
-#if !CLIENTSDKV15
+#if !ONPREMISES
                     web.NoCrawl = webSettings.NoCrawl;
 
                     web.EnsureProperty(w => w.HasUniqueRoleAssignments);
                     if (!web.IsSubSite() || (web.IsSubSite() && web.HasUniqueRoleAssignments))
                     {
-                        String requestAccessEmailValue = parser.ParseString(webSettings.RequestAccessEmail);
-                        if (!String.IsNullOrEmpty(requestAccessEmailValue) && requestAccessEmailValue.Length >= 255)
-                        {
-                            requestAccessEmailValue = requestAccessEmailValue.Substring(0, 255);
-                        }
-                        if (!String.IsNullOrEmpty(requestAccessEmailValue))
-                        {
-                            web.RequestAccessEmail = requestAccessEmailValue;
-                        }
+                    String requestAccessEmailValue = parser.ParseString(webSettings.RequestAccessEmail);
+                    if (!String.IsNullOrEmpty(requestAccessEmailValue) && requestAccessEmailValue.Length >= 255)
+                    {
+                        requestAccessEmailValue = requestAccessEmailValue.Substring(0, 255);
+                    }
+                    if (!String.IsNullOrEmpty(requestAccessEmailValue))
+                    {
+                        web.RequestAccessEmail = requestAccessEmailValue;
+                    }
                     }
 #endif
                     var masterUrl = parser.ParseString(webSettings.MasterPageUrl);

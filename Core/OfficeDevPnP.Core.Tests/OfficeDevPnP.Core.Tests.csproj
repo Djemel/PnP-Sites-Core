@@ -40,7 +40,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug15\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;ONPREMISES;SP2013</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -48,13 +48,13 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release15\</OutputPath>
-    <DefineConstants>TRACE;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;ONPREMISES;SP2013</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release16|AnyCPU'">
     <OutputPath>bin\Release16\</OutputPath>
-    <DefineConstants>TRACE;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;ONPREMISES;SP2016</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -64,7 +64,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug16|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug16\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;ONPREMISES;SP2016</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
@@ -281,6 +281,7 @@
     <Reference Include="System.IdentityModel" />
     <Reference Include="System.IdentityModel.Selectors" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Security" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.ServiceModel.Web" />
     <Reference Include="System.Spatial, Version=5.6.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -327,12 +328,32 @@
     <Compile Include="Diagnostics\LogTests.cs" />
     <Compile Include="Framework\Connectors\ConnectorAzureTests.cs" />
     <Compile Include="Framework\Connectors\ConnectorFileSystemTests.cs" />
+    <Compile Include="Framework\Connectors\ConnectorOpenXmlTests.cs" />
     <Compile Include="Framework\Connectors\ConnectorSharePointTests.cs" />
+    <Compile Include="Framework\ExtensibilityCallOut\ExtensibilityMockHandler.cs" />
     <Compile Include="Framework\ExtensibilityCallOut\ExtensibilityMockTokenProvider.cs" />
     <Compile Include="Framework\ExtensibilityCallOut\ExtensibilityTestConstants.cs" />
     <Compile Include="Framework\ExtensibilityCallOut\ExtensibilityMockProvider.cs" />
     <Compile Include="Framework\ExtensibilityCallOut\ExtensibilityTests.cs" />
+    <Compile Include="Framework\Functional\CustomActionTests.cs" />
+    <Compile Include="Framework\Functional\FeatureTests.cs" />
+    <Compile Include="Framework\Functional\ContentTypeTests.cs" />
+    <Compile Include="Framework\Functional\FieldTests.cs" />
+    <Compile Include="Framework\Functional\FunctionalTestBase.cs" />
+    <Compile Include="Framework\Functional\TestProvisioningTemplateResult.cs" />
+    <Compile Include="Framework\Functional\Validators\CustomActionValidator.cs" />
+    <Compile Include="Framework\Functional\Validators\FeatureValidator.cs" />
+    <Compile Include="Framework\Functional\Validators\ContentTypeValidator.cs" />
+    <Compile Include="Framework\Functional\Validators\FieldValidator.cs" />
+    <Compile Include="Framework\Functional\Validators\ValidateXmlEventArgs.cs" />
+    <Compile Include="Framework\Functional\Validators\ValidateEventArgs.cs" />
+    <Compile Include="Framework\Functional\Validators\ValidatorBase.cs" />
+    <Compile Include="Framework\Functional\Validators\PropertyBagValidator.cs" />
+    <Compile Include="Framework\Functional\PropertyBagTests.cs" />
+    <Compile Include="Framework\Functional\Validators\XmlCompare.cs" />
+    <Compile Include="Framework\Functional\Validators\XmlEqualityResult.cs" />
     <Compile Include="Framework\ObjectHandlers\ObjectAuditSettingsTests.cs" />
+    <Compile Include="Framework\ObjectHandlers\ObjectLookupFieldsTests.cs" />
     <Compile Include="Framework\ObjectHandlers\ObjectRegionalSettingsTests.cs" />
     <Compile Include="Framework\ObjectHandlers\ObjectSupportedUILanguagesTests.cs" />
     <Compile Include="Framework\ObjectHandlers\ObjectComposedLookTests.cs" />
@@ -348,6 +369,8 @@
     <Compile Include="Framework\ObjectHandlers\ObjectContentTypeTests.cs" />
     <Compile Include="Framework\ObjectHandlers\TokenParserTests.cs" />
     <Compile Include="Framework\Providers\BaseTemplateTests.cs" />
+    <Compile Include="Framework\Providers\Extensibility\SecureXml.cs" />
+    <Compile Include="Framework\Providers\Extensibility\XMLEncryptionTemplateProviderExtension.cs" />
     <Compile Include="Framework\Providers\XMLProvidersTests.cs" />
     <Compile Include="Framework\ProvisioningTemplates\DomainModelTests.cs" />
     <Compile Include="Utilities\JsonUtilityTests.cs" />
@@ -373,6 +396,11 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="App.config.sample" />
+    <None Include="Framework\Functional\Templates\ct3document.docx" />
+    <None Include="Framework\Functional\Templates\ct1document.docx" />
+    <None Include="Framework\Functional\Templates\CT21Document.docx" />
+    <None Include="Framework\Functional\Templates\CT20Document0101.docx" />
+    <None Include="Framework\Functional\Templates\CT20Document.docx" />
     <None Include="packages.config" />
     <None Include="Resources\custom.spcolor">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -381,6 +409,37 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Resources\HelloWorldApp.app" />
+    <Content Include="Framework\Functional\Templates\contenttype_delta_1.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\contenttype_files.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\contenttype_add.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\CT3DisplayForm.aspx">
+      <SubType>ASPXCodeBehind</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\CT3EditForm.aspx">
+      <SubType>ASPXCodeBehind</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\field_delta_1.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\field_add.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\propertybag_delta_2.xml" />
+    <Content Include="Framework\Functional\Templates\propertybag_delta_1.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\propertybag_add.xml">
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Framework\Functional\Templates\customaction_delta_1.xml" />
+    <Content Include="Framework\Functional\Templates\customaction_add.xml" />
+    <Content Include="Framework\Functional\Templates\feature_base.xml" />
     <Content Include="Resources\EditForm.aspx" />
     <Content Include="Resources\garagebg.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -404,10 +463,14 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Templates\ProvisioningTemplate-2015-05-NOT-Valid-XInclude-01.xml" />
-    <Content Include="Resources\Templates\ProvisioningTemplate-2015-05-Sample-01.xml" />
-    <Content Include="Resources\Templates\ProvisioningTemplate-2015-05-Sample-02.xml" />
+    <Content Include="Resources\Templates\ProvisioningTemplate-2016-05-Sample-01.xml" />
+    <Content Include="Resources\Templates\ProvisioningTemplate-2016-05-Sample-02.xml" />
     <Content Include="Resources\Templates\ProvisioningTemplate-2015-05-Valid-XInclude-01.xml" />
     <Content Include="Resources\Templates\ProvisioningTemplate-2015-05-XInclude-PropertyBags.xml" />
+    <Content Include="Resources\TestDefault.aspx">
+      <SubType>ASPXCodeBehind</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\UpdateTermSet.csv" />
   </ItemGroup>
   <ItemGroup>

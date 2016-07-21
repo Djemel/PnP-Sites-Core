@@ -39,7 +39,8 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                     var newGroup = false;
 
-                    TermGroup group = termStore.Groups.FirstOrDefault(g => g.Id == modelTermGroup.Id);
+                    TermGroup group = termStore.Groups.FirstOrDefault(
+                        g => g.Id == modelTermGroup.Id || g.Name == modelTermGroup.Name);
                     if (group == null)
                     {
                         if (modelTermGroup.Name == "Site Collection")
@@ -66,6 +67,28 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                                 group.Description = modelTermGroup.Description;
 
+                                #if !ONPREMISES
+
+                                // Handle TermGroup Contributors, if any
+                                if (modelTermGroup.Contributors != null && modelTermGroup.Contributors.Count > 0)
+                                {
+                                    foreach(var c in modelTermGroup.Contributors)
+                                    {
+                                        group.AddContributor(c.Name);
+                                    }
+                                }
+
+                                // Handle TermGroup Managers, if any
+                                if (modelTermGroup.Managers != null && modelTermGroup.Managers.Count > 0)
+                                {
+                                    foreach (var m in modelTermGroup.Managers)
+                                    {
+                                        group.AddGroupManager(m.Name);
+                                    }
+                                }
+
+                                #endif
+
                                 termStore.CommitAll();
                                 web.Context.Load(group);
                                 web.Context.ExecuteQueryRetry();
@@ -76,9 +99,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         }
                     }
 
-                    #endregion
+#endregion
 
-                    #region TermSets
+#region TermSets
 
                     foreach (var modelTermSet in modelTermGroup.TermSets)
                     {
@@ -86,12 +109,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         var newTermSet = false;
                         if (!newGroup)
                         {
-                            set = group.TermSets.FirstOrDefault(ts => ts.Id == modelTermSet.Id);
-                            if (set == null)
-                            {
-                                set = group.TermSets.FirstOrDefault(ts => ts.Name == modelTermSet.Name);
-
-                            }
+                            set = group.TermSets.FirstOrDefault(ts => ts.Id == modelTermSet.Id || ts.Name == modelTermSet.Name);
                         }
                         if (set == null)
                         {
@@ -176,7 +194,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         }
                     }
 
-                    #endregion
+#endregion
 
                 }
             }
@@ -310,9 +328,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     // Find the site collection termgroup, if any
                     TaxonomySession session = TaxonomySession.GetTaxonomySession(web.Context);
                     var termStore = session.GetDefaultSiteCollectionTermStore();
-					web.Context.Load(termStore, t => t.Id, t => t.DefaultLanguage);
+					web.Context.Load(termStore, t => t.Id, t => t.DefaultLanguage, t => t.OrphanedTermsTermSet);
 					web.Context.ExecuteQueryRetry();
 
+                    var orphanedTermsTermSetId = termStore.OrphanedTermsTermSet.Id;
 					if (termStore.ServerObjectIsNull.Value)
 					{
 						termStore = session.GetDefaultKeywordsTermStore();
@@ -365,8 +384,32 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                             Description = termGroup.Description
                         };
 
+                        #if !ONPREMISES
+
+                        // If we need to include TermGroups security
+                        if (creationInfo.IncludeTermGroupsSecurity)
+                        {
+                            termGroup.EnsureProperties(tg => tg.ContributorPrincipalNames, tg => tg.GroupManagerPrincipalNames);
+
+                            // Extract the TermGroup contributors
+                            modelTermGroup.Contributors.AddRange(
+                                from c in termGroup.ContributorPrincipalNames
+                                select new Model.User { Name = c });
+
+                            // Extract the TermGroup managers
+                            modelTermGroup.Managers.AddRange(
+                                from m in termGroup.GroupManagerPrincipalNames
+                                select new Model.User { Name = m });
+                        }
+
+                        #endif
+
                         foreach (var termSet in termGroup.TermSets)
                         {
+                            // Do not include the orphan term set
+                            if (termSet.Id == orphanedTermsTermSetId) continue;
+
+                            // Extract all other term sets
                             var modelTermSet = new Model.TermSet();
                             modelTermSet.Name = termSet.Name;
                             if (!isSiteCollectionTermGroup)

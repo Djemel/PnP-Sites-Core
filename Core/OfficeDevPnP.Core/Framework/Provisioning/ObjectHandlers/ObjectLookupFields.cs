@@ -5,6 +5,7 @@ using Microsoft.SharePoint.Client;
 using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using Field = Microsoft.SharePoint.Client.Field;
 using OfficeDevPnP.Core.Diagnostics;
+using OfficeDevPnP.Core.Utilities;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -64,7 +65,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     var webId = string.Empty;
 
                     var field = rootWeb.Fields.GetById(fieldId);
-                    rootWeb.Context.Load(field, f => f.SchemaXml);
+                    rootWeb.Context.Load(field, f => f.SchemaXmlWithResourceTokens);
                     rootWeb.Context.ExecuteQueryRetry();
 
                     List sourceList = FindSourceList(listIdentifier, web, rootWeb);
@@ -104,7 +105,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         try
                         {
                             var field = createdList.Fields.GetById(fieldId);
-                            web.Context.Load(field, f => f.SchemaXml);
+                            web.Context.Load(field, f => f.SchemaXmlWithResourceTokens);
                             web.Context.ExecuteQueryRetry();
 
                             List sourceList = FindSourceList(listIdentifier, web, rootWeb);
@@ -160,13 +161,15 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         {
             var isDirty = false;
 
-            var existingFieldElement = XElement.Parse(field.SchemaXml);
+            var existingFieldElement = XElement.Parse(field.SchemaXmlWithResourceTokens);
 
-            isDirty = UpdateFieldAttribute(existingFieldElement, "List", listGuid.ToString(), false);
+            isDirty = UpdateFieldAttribute(existingFieldElement, "List", listGuid.ToString("B"), false);
 
             isDirty = UpdateFieldAttribute(existingFieldElement, "WebId", webId, isDirty);
 
-            isDirty = UpdateFieldAttribute(existingFieldElement, "SourceID", webId, isDirty);
+            var webIdGuid = Guid.Parse(webId);
+
+            isDirty = UpdateFieldAttribute(existingFieldElement, "SourceID", webIdGuid.ToString("B"), isDirty);
 
             if (!string.IsNullOrEmpty(relationshipDeleteBehavior))
                 isDirty = UpdateFieldAttribute(existingFieldElement, "RelationshipDeleteBehavior", relationshipDeleteBehavior, isDirty);

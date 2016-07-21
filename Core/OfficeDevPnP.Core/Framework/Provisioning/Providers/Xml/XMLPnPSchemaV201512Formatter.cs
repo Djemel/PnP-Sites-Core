@@ -46,7 +46,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             XDocument xml = XDocument.Load(template);
 
             // Load the XSD embedded resource
-            Stream stream = typeof(XMLPnPSchemaV201508Formatter)
+            Stream stream = typeof(XMLPnPSchemaV201512Formatter)
                 .Assembly
                 .GetManifestResourceStream("OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.ProvisioningSchema-2015-12.xsd");
 
@@ -440,6 +440,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                               Hidden = fieldRef.Hidden,
                               Required = fieldRef.Required
                           }).ToArray() : null,
+                         DocumentTemplate = !String.IsNullOrEmpty(ct.DocumentTemplate) ? new ContentTypeDocumentTemplate {  TargetName = ct.DocumentTemplate } : null,
                          DocumentSetTemplate = ct.DocumentSetTemplate != null ?
                              new V201512.DocumentSetTemplate
                              {
@@ -645,8 +646,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                              ImageUrl = customAction.ImageUrl,
                              Location = customAction.Location,
                              Name = customAction.Name,
-                             Rights = customAction.Rights != null ? customAction.Rights.FromBasePermissionsToString() : null,
-                             RightsSpecified = true,
+                             Rights = customAction.Rights.FromBasePermissionsToStringV201512(),
+                             RegistrationId = customAction.RegistrationId,
+                             RegistrationType = (RegistrationType)Enum.Parse(typeof(RegistrationType), customAction.RegistrationType.ToString(), true),
+                             RegistrationTypeSpecified = true,
                              ScriptBlock = customAction.ScriptBlock,
                              ScriptSrc = customAction.ScriptSrc,
                              Sequence = customAction.Sequence,
@@ -677,8 +680,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                              ImageUrl = customAction.ImageUrl,
                              Location = customAction.Location,
                              Name = customAction.Name,
-                             Rights = customAction.Rights != null ? customAction.Rights.FromBasePermissionsToString() : null,
-                             RightsSpecified = true,
+                             Rights = customAction.Rights.FromBasePermissionsToStringV201512(),
+                             RegistrationId = customAction.RegistrationId,
+                             RegistrationType = (RegistrationType)Enum.Parse(typeof(RegistrationType), customAction.RegistrationType.ToString(), true),
+                             RegistrationTypeSpecified = true,
                              ScriptBlock = customAction.ScriptBlock,
                              ScriptSrc = customAction.ScriptSrc,
                              Sequence = customAction.Sequence,
@@ -1018,10 +1023,11 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             #region Providers
 
             // Translate Providers, if any
-            if (template.Providers != null && template.Providers.Count > 0)
+            if ((template.Providers != null && template.Providers.Count > 0) || (template.ExtensibilityHandlers != null && template.ExtensibilityHandlers.Count > 0))
             {
+                var extensibilityHandlers = template.ExtensibilityHandlers.Union(template.Providers);
                 result.Providers =
-                    (from provider in template.Providers
+                    (from provider in extensibilityHandlers
                      select new V201512.Provider
                      {
                          HandlerType = String.Format("{0}, {1}", provider.Type, provider.Assembly),
@@ -1555,9 +1561,12 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                             ImageUrl = customAction.ImageUrl,
                             Location = customAction.Location,
                             Name = customAction.Name,
-                            Rights = customAction.RightsSpecified ? customAction.Rights.ToBasePermissions(): new BasePermissions(),
+                            Rights = customAction.Rights.ToBasePermissionsV201512(),
                             ScriptBlock = customAction.ScriptBlock,
                             ScriptSrc = customAction.ScriptSrc,
+                            RegistrationId = customAction.RegistrationId,
+                            RegistrationType = (UserCustomActionRegistrationType)Enum.Parse(typeof(UserCustomActionRegistrationType), customAction.RegistrationType.ToString(), true),
+                            // Remove = MISSING IN THE SCHEMA!,
                             Sequence = customAction.SequenceSpecified ? customAction.Sequence : 100,
                             Title = customAction.Title,
                             Url = customAction.Url,
@@ -1577,9 +1586,12 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                             ImageUrl = customAction.ImageUrl,
                             Location = customAction.Location,
                             Name = customAction.Name,
-                            Rights = customAction.RightsSpecified ? customAction.Rights.ToBasePermissions() : new BasePermissions(),
+                            Rights = customAction.Rights.ToBasePermissionsV201512(),
                             ScriptBlock = customAction.ScriptBlock,
                             ScriptSrc = customAction.ScriptSrc,
+                            RegistrationId = customAction.RegistrationId,
+                            RegistrationType = (UserCustomActionRegistrationType)Enum.Parse(typeof(UserCustomActionRegistrationType), customAction.RegistrationType.ToString(), true),
+                            // Remove = MISSING IN THE SCHEMA!,
                             Sequence = customAction.SequenceSpecified ? customAction.Sequence : 100,
                             Title = customAction.Title,
                             Url = customAction.Url,
@@ -1845,8 +1857,8 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
                         var handlerType = Type.GetType(provider.HandlerType, false);
                         if (handlerType != null)
                         {
-                            result.Providers.Add(
-                                new Model.Provider
+                            result.ExtensibilityHandlers.Add(
+                                new Model.ExtensibilityHandler
                                 {
                                     Assembly = handlerType.Assembly.FullName,
                                     Type = handlerType.FullName,
@@ -2262,7 +2274,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             return (result);
         }
 
-        public static string FromBasePermissionsToString(this BasePermissions basePermissions)
+        public static string FromBasePermissionsToStringV201512(this BasePermissions basePermissions)
         {
             List<string> permissions = new List<string>();
             foreach (var pk in (PermissionKind[])Enum.GetValues(typeof(PermissionKind)))
@@ -2275,21 +2287,21 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml
             return string.Join(",", permissions.ToArray());
         }
             
-        public static BasePermissions ToBasePermissions(this string basePermissionString)
+        public static BasePermissions ToBasePermissionsV201512(this string basePermissionString)
         {
             BasePermissions bp = new BasePermissions();
 
             // Is it an int value (for backwards compability)?
-            int permissionInt = 0;
+            int permissionInt;
             if (int.TryParse(basePermissionString, out permissionInt))
             {
                 bp.Set((PermissionKind)permissionInt);
             }
-            else {
-                foreach (var pk in basePermissionString.Split(new char[] { ',' }))
+            else if(!string.IsNullOrEmpty(basePermissionString)){
+                foreach (var pk in basePermissionString.Split(','))
                 {
-                    PermissionKind permissionKind = PermissionKind.AddAndCustomizePages;
-                    if (Enum.TryParse<PermissionKind>(basePermissionString, out permissionKind))
+                    PermissionKind permissionKind;
+                    if (Enum.TryParse<PermissionKind>(pk, out permissionKind))
                     {
                         bp.Set(permissionKind);
                     }

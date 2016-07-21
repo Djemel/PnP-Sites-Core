@@ -6,6 +6,7 @@ using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using OfficeDevPnP.Core.Diagnostics;
 using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.Extensions;
 using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.TokenDefinitions;
+using OfficeDevPnP.Core.Utilities;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -40,7 +41,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     {
                         file = web.GetFileByServerRelativeUrl(url);
                         web.Context.Load(file);
-                        web.Context.ExecuteQuery();
+                        web.Context.ExecuteQueryRetry();
                     }
                     catch (ServerException ex)
                     {
@@ -84,7 +85,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                             scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_Pages_Creating_new_page__0_, url);
 
                             web.AddWikiPageByUrl(url);
-                            web.AddLayoutToWikiPage(page.Layout, url);
+                            if (page.Layout == WikiPageLayout.Custom)
+                            {
+                                web.AddLayoutToWikiPage(WikiPageLayout.OneColumn, url);
+                            }
+                            else {
+                                web.AddLayoutToWikiPage(page.Layout, url);
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -136,7 +143,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     if (page.Security != null && page.Security.RoleAssignments.Count != 0)
                     {
                         web.Context.Load(file.ListItemAllFields);
-                        web.Context.ExecuteQuery();
+                        web.Context.ExecuteQueryRetry();
                         file.ListItemAllFields.SetSecurity(parser, page.Security);
                     }
                 }

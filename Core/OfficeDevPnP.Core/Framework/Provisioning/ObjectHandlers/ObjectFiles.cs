@@ -22,10 +22,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
     internal class ObjectFiles : ObjectHandlerBase
     {
+        private readonly string[] WriteableReadOnlyFields = new string[] { "publishingpagelayout", "contenttypeid" };
+
         public override string Name
         {
             get { return "Files"; }
         }
+
         public override TokenParser ProvisionObjects(Web web, ProvisioningTemplate template, TokenParser parser, ProvisioningTemplateApplyingInformation applyingInformation)
         {
             using (var scope = new PnPMonitoredScope(this.Name))
@@ -34,7 +37,15 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                 web.EnsureProperties(w => w.ServerRelativeUrl, w => w.Url);
 
-                foreach (var file in template.Files)
+                // Build on the fly the list of additional files coming from the Directories
+                var directoryFiles = new List<Model.File>();
+                foreach (var directory in template.Directories)
+                {
+                    var metadataProperties = directory.GetMetadataProperties();
+                    directoryFiles.AddRange(directory.GetDirectoryFiles(metadataProperties));
+                }
+
+                foreach (var file in template.Files.Union(directoryFiles))
                 {
                     var folderName = parser.ParseString(file.Folder);
 
@@ -58,9 +69,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                             scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_Files_Uploading_and_overwriting_existing_file__0_, file.Src);
                             checkedOut = CheckOutIfNeeded(web, targetFile);
 
-                            using (var stream = template.Connector.GetFileStream(file.Src))
+                            using (var stream = GetFileStream(template, file))
                             {
-                                targetFile = folder.UploadFile(template.Connector.GetFilenamePart(file.Src), stream, file.Overwrite);
+                                targetFile = UploadFile(template, file, folder, stream);
                             }
                         }
                         else
@@ -70,10 +81,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     }
                     else
                     {
-                        using (var stream = template.Connector.GetFileStream(file.Src))
+                        using (var stream = GetFileStream(template, file))
                         {
                             scope.LogDebug(CoreResources.Provisioning_ObjectHandlers_Files_Uploading_file__0_, file.Src);
-                            targetFile = folder.UploadFile(template.Connector.GetFilenamePart(file.Src), stream, file.Overwrite);
+                            targetFile = UploadFile(template, file, folder, stream);
                         }
 
                         checkedOut = CheckOutIfNeeded(web, targetFile);
@@ -192,12 +203,14 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 {
                     var propertyName = kvp.Key;
                     var propertyValue = kvp.Value;
-
-                    var fieldValues = file.ListItemAllFields.FieldValues;
+                    
                     var targetField = parentList.Fields.GetByInternalNameOrTitle(propertyName);
                     targetField.EnsureProperties(f => f.TypeAsString, f => f.ReadOnlyField);
 
-                    if (true)  // !targetField.ReadOnlyField)
+                    // Changed by PaoloPia because there are fields like PublishingPageLayout
+                    // which are marked as read-only, but have to be overwritten while uploading
+                    // a publishing page file and which in reality can still be written
+                    if (!targetField.ReadOnlyField || WriteableReadOnlyFields.Contains(propertyName.ToLower())) 
                     {
                         switch (propertyName.ToUpperInvariant())
                         {
@@ -249,6 +262,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                                             }
                                             file.ListItemAllFields[propertyName] = linkValue;
                                             break;
+                                        case "MultiChoice":
+                                            var multiChoice = JsonUtility.Deserialize<String[]>(propertyValue);
+                                            file.ListItemAllFields[propertyName] = multiChoice;
+                                            break;
                                         case "LookupMulti":
                                             var lookupMultiValue = JsonUtility.Deserialize<FieldLookupValue[]>(propertyValue);
                                             file.ListItemAllFields[propertyName] = lookupMultiValue;
@@ -287,7 +304,10 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 xml = Regex.Replace(xml, list.Id.ToString(), string.Format("{{listid:{0}}}", list.Title), RegexOptions.IgnoreCase);
             }
             xml = Regex.Replace(xml, web.Id.ToString(), "{siteid}", RegexOptions.IgnoreCase);
-            xml = Regex.Replace(xml, web.ServerRelativeUrl, "{site}", RegexOptions.IgnoreCase);
+            if (web.ServerRelativeUrl != "/")
+            {
+                xml = Regex.Replace(xml, web.ServerRelativeUrl, "{site}", RegexOptions.IgnoreCase);
+            }
 
             return xml;
         }
@@ -302,7 +322,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         {
             if (!_willProvision.HasValue)
             {
-                _willProvision = template.Files.Any();
+                _willProvision = template.Files.Any() | template.Directories.Any();
             }
             return _willProvision.Value;
         }
@@ -316,5 +336,105 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             return _willExtract.Value;
         }
 
+        private static File UploadFile(ProvisioningTemplate template, Model.File file, Microsoft.SharePoint.Client.Folder folder, Stream stream)
+        {
+            File targetFile = null;
+            var fileName = template.Connector.GetFilenamePart(file.Src);
+            try
+            {
+                targetFile = folder.UploadFile(fileName, stream, file.Overwrite);
+            }
+            catch (Exception)
+            {
+                //The file name might contain encoded characters that prevent upload. Decode it and try again.
+                fileName = WebUtility.UrlDecode(fileName);
+                targetFile = folder.UploadFile(fileName, stream, file.Overwrite);
+            }
+            return targetFile;
+        }
+
+        /// <summary>
+        /// Retrieves <see cref="Stream"/> from connector. If the file name contains special characters (e.g. "%20") and cannot be retrieved, a workaround will be performed
+        /// </summary>
+        private static Stream GetFileStream(ProvisioningTemplate template, Model.File file)
+        {
+            var fileName = file.Src;
+            var stream = template.Connector.GetFileStream(fileName);
+            if (stream == null)
+            {
+                //Decode the URL and try again
+                fileName = WebUtility.UrlDecode(fileName);
+                stream = template.Connector.GetFileStream(fileName);
+            }
+
+            return stream;
+        }
+    }
+
+    internal static class DirectoryExtensions
+    {
+        internal static Dictionary<String, Dictionary<String, String>> GetMetadataProperties(this Model.Directory directory)
+        {
+            Dictionary<String, Dictionary<String, String>> result = null;
+
+            if (directory.MetadataMappingFile != null)
+            {
+                var metadataPropertiesStream = directory.ParentTemplate.Connector.GetFileStream(directory.MetadataMappingFile);
+                if (metadataPropertiesStream != null)
+                {
+                    using (var sr = new StreamReader(metadataPropertiesStream))
+                    {
+                        var metadataPropertiesString = sr.ReadToEnd();
+                        result = JsonConvert.DeserializeObject<Dictionary<String, Dictionary<String, String>>>(metadataPropertiesString);
+                    }
+                }
+            }
+
+            return (result);
+        }
+
+        internal static List<Model.File> GetDirectoryFiles(this Model.Directory directory, 
+            Dictionary<String, Dictionary<String, String>> metadataProperties = null)
+        {
+            var result = new List<Model.File>();
+
+            var files = directory.ParentTemplate.Connector.GetFiles(directory.Src);
+
+            if (!String.IsNullOrEmpty(directory.IncludedExtensions))
+            {
+                var includedExtensions = directory.IncludedExtensions.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                files = files.Where(f => includedExtensions.Contains($"*{Path.GetExtension(f).ToLower()}")).ToList();
+            }
+
+            if (!String.IsNullOrEmpty(directory.ExcludedExtensions))
+            {
+                var excludedExtensions = directory.ExcludedExtensions.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                files = files.Where(f => !excludedExtensions.Contains($"*{Path.GetExtension(f).ToLower()}")).ToList();
+            }
+
+            result.AddRange(from file in files
+                            select new Model.File(
+                                directory.Src + @"\" + file,
+                                directory.Folder,
+                                directory.Overwrite,
+                                null, // No WebPartPages are supported with this technique
+                                metadataProperties != null ? metadataProperties[directory.Src + @"\" + file] : null,
+                                directory.Security,
+                                directory.Level
+                                ));
+
+            if (directory.Recursive)
+            {
+                var subFolders = directory.ParentTemplate.Connector.GetFolders(directory.Src);
+                foreach (var folder in subFolders)
+                {
+                    directory.Src += @"\" + folder;
+                    directory.Folder += @"\" + folder;
+                    result.AddRange(directory.GetDirectoryFiles(metadataProperties));
+                }
+            }
+
+            return (result);
+        }
     }
 }

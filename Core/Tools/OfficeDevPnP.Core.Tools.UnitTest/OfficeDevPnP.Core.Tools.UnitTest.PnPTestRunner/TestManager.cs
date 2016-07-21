@@ -1,13 +1,10 @@
-﻿using OfficeDevPnP.Core.Tools.UnitTest.PnPBuildExtensions.SQL;
+﻿using OfficeDevPnP.Core.Tools.UnitTest.SQL;
 using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity.Validation;
 using System.Diagnostics;
-using System.Linq;
 using System.Management;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace OfficeDevPnP.Core.Tools.UnitTest.PnPTestRunner
 {
@@ -32,7 +29,7 @@ namespace OfficeDevPnP.Core.Tools.UnitTest.PnPTestRunner
         public void Execute(string pnpConfigurationToTest, string sqlConnectionString, string buildTarget)
         {
             // Prep an entity framework connection string and create a dbcontext
-            connectionString = String.Format("metadata=res://*/SQL.TestModel.csdl|res://*/SQL.TestModel.ssdl|res://*/SQL.TestModel.msl;provider=System.Data.SqlClient;provider connection string=\"{0}\"", sqlConnectionString);
+            connectionString = String.Format("metadata=res://*/TestModel.csdl|res://*/TestModel.ssdl|res://*/TestModel.msl;provider=System.Data.SqlClient;provider connection string=\"{0}\"", sqlConnectionString);
             context = new TestModelContainer(connectionString);
 
             string msBuildExe = ConfigurationManager.AppSettings[Constants.settingMSBuildExe].ToString();
@@ -44,7 +41,7 @@ namespace OfficeDevPnP.Core.Tools.UnitTest.PnPTestRunner
             // Create process
             var proc = new Process();
             proc.StartInfo.FileName = msBuildExe;
-            proc.StartInfo.Arguments = String.Format("/property:PnPConfigurationToTest={0};PnPSQLConnectionString=\"metadata=res://*/SQL.TestModel.csdl|res://*/SQL.TestModel.ssdl|res://*/SQL.TestModel.msl;provider=System.Data.SqlClient;provider connection string=&quot;{1}&quot;\"  \"{2}\"", pnpConfigurationToTest, sqlConnectionString, buildTarget);
+            proc.StartInfo.Arguments = String.Format("/property:PnPConfigurationToTest={0};PnPSQLConnectionString=\"metadata=res://*/TestModel.csdl|res://*/TestModel.ssdl|res://*/TestModel.msl;provider=System.Data.SqlClient;provider connection string=&quot;{1}&quot;\"  \"{2}\"", pnpConfigurationToTest, sqlConnectionString, buildTarget);
 
             // set up output redirection
             proc.StartInfo.RedirectStandardOutput = true;
@@ -100,6 +97,7 @@ namespace OfficeDevPnP.Core.Tools.UnitTest.PnPTestRunner
             }
 
             // persist the log file
+            
             TestRun run = context.TestRunSet.Find(this.testRunId);
             run.MSBuildLog = sb.ToString();
             // If the run did not finish by now then something went wrong
@@ -165,6 +163,8 @@ namespace OfficeDevPnP.Core.Tools.UnitTest.PnPTestRunner
         /// <param name="s">String to write</param>
         private void WriteLine(string s)
         {
+            s = string.Format("[{0}] {1}", DateTime.Now.ToString(), s);
+
             sb.AppendLine(s);
             Console.WriteLine(s);
         }

@@ -15,7 +15,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
     /// </summary>
     public partial class ProvisioningTemplate : IEquatable<ProvisioningTemplate>
     {
-        #region Private Members
+        #region Private Fields
 
         private Dictionary<string, string> _parameters = new Dictionary<string, string>();
         private LocalizationCollection _localizations;
@@ -26,9 +26,11 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
         private ComposedLook _composedLook;
         private Features _features;
         private SiteSecurity _siteSecurity;
+        private Navigation _navigation;
         private CustomActions _customActions;
         private FileCollection _files;
-        private ProviderCollection _providers;
+        private DirectoryCollection _directories;
+        private ExtensibilityHandlerCollection _extensibilityHandlers;
         private PageCollection _pages;
         private TermGroupCollection _termGroups;
         private FileConnectorBase connector;
@@ -68,7 +70,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
             this._customActions.ParentTemplate = this;
 
             this._files = new FileCollection(this);
-            this._providers = new ProviderCollection(this);
+            this._directories = new DirectoryCollection(this);
+            this._providers = new ProviderCollection(this); // Deprecated
+            this._extensibilityHandlers = new ExtensibilityHandlerCollection(this);
             this._pages = new PageCollection(this);
             this._termGroups = new TermGroupCollection(this);
 
@@ -100,7 +104,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
             get { return this._localizations; }
             private set { this._localizations = value; }
         }
-        
+
         /// <summary>
         /// Gets or sets the ID of the Provisioning Template
         /// </summary>
@@ -138,6 +142,26 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
                 if (this._siteSecurity != null)
                 {
                     this._siteSecurity.ParentTemplate = this;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The Navigation configurations of the Provisioning Template
+        /// </summary>
+        public Navigation Navigation
+        {
+            get { return this._navigation; }
+            set
+            {
+                if (this._navigation != null)
+                {
+                    this._navigation.ParentTemplate = null;
+                }
+                this._navigation = value;
+                if (this._navigation != null)
+                {
+                    this._navigation.ParentTemplate = this;
                 }
             }
         }
@@ -216,6 +240,15 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
         }
 
         /// <summary>
+        /// Gets a collection of directories from which upload files for the template
+        /// </summary>
+        public DirectoryCollection Directories
+        {
+            get { return this._directories; }
+            private set { this._directories = value; }
+        }
+
+        /// <summary>
         /// Gets or Sets the composed look of the template
         /// </summary>
         public ComposedLook ComposedLook
@@ -235,14 +268,12 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
             }
         }
 
-        /// <summary>
-        /// Gets a collection of Providers that are used during the extensibility pipeline
-        /// </summary>
-        public ProviderCollection Providers
+        public ExtensibilityHandlerCollection ExtensibilityHandlers
         {
-            get { return this._providers; }
-            private set { this._providers = value; }
+            get { return this._extensibilityHandlers; }
+            private set { this._extensibilityHandlers = value; }
         }
+
 
         /// <summary>
         /// Gets a collection of Wiki Pages for the template
@@ -359,9 +390,14 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
         }
 
         /// <summary>
-        /// The Search Settings for the Provisioning Template
+        /// The Site Collection level Search Settings for the Provisioning Template
         /// </summary>
-        public String SearchSettings { get; set; }
+        public String SiteSearchSettings { get; set; }
+
+        /// <summary>
+        /// The Web level Search Settings for the Provisioning Template
+        /// </summary>
+        public String WebSearchSettings { get; set; }
 
         /// <summary>
         /// Defines the SharePoint Add-ins to provision
@@ -415,6 +451,11 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
         /// The Description of the Provisioning Template
         /// </summary>
         public String Description { get; set; }
+
+        /// <summary>
+        /// The Base SiteTemplate of the Provisioning Template
+        /// </summary>
+        public String BaseSiteTemplate { get; set; }
 
         public FileConnectorBase Connector
         {
@@ -485,9 +526,9 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
 
             return (
                 this.ComposedLook.Equals(other.ComposedLook) &&
-                this.ContentTypes.DeepEquals(other.ContentTypes) && 
+                this.ContentTypes.DeepEquals(other.ContentTypes) &&
                 this.CustomActions.SiteCustomActions.DeepEquals(other.CustomActions.SiteCustomActions) &&
-                this.CustomActions.WebCustomActions.DeepEquals(other.CustomActions.WebCustomActions) && 
+                this.CustomActions.WebCustomActions.DeepEquals(other.CustomActions.WebCustomActions) &&
                 this.Features.SiteFeatures.DeepEquals(other.Features.SiteFeatures) &&
                 this.Features.WebFeatures.DeepEquals(other.Features.WebFeatures) &&
                 this.Files.DeepEquals(other.Files) &&
@@ -507,7 +548,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Model
                 this.Version == other.Version &&
                 this.Pages.DeepEquals(other.Pages) &&
                 this.TermGroups.DeepEquals(other.TermGroups) &&
-                ((this.Workflows != null && other.Workflows != null) ? this.Workflows.WorkflowDefinitions.DeepEquals(other.Workflows.WorkflowDefinitions) : true)  &&
+                ((this.Workflows != null && other.Workflows != null) ? this.Workflows.WorkflowDefinitions.DeepEquals(other.Workflows.WorkflowDefinitions) : true) &&
                 ((this.Workflows != null && other.Workflows != null) ? this.Workflows.WorkflowSubscriptions.DeepEquals(other.Workflows.WorkflowSubscriptions) : true) &&
                 this.AddIns.DeepEquals(other.AddIns) &&
                 this.Publishing == other.Publishing &&

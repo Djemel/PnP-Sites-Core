@@ -7,7 +7,9 @@ using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.TokenDefinitions;
 using System.Resources;
 using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -62,6 +64,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             _tokens.Add(new CurrentUserIdToken(web));
             _tokens.Add(new CurrentUserLoginNameToken(web));
             _tokens.Add(new CurrentUserFullNameToken(web));
+            _tokens.Add(new AuthenticationRealmToken(web));
 
             // Add lists
             web.Context.Load(web.Lists, ls => ls.Include(l => l.Id, l => l.Title, l => l.RootFolder.ServerRelativeUrl));
@@ -70,6 +73,24 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             {
                 _tokens.Add(new ListIdToken(web, list.Title, list.Id));
                 _tokens.Add(new ListUrlToken(web, list.Title, list.RootFolder.ServerRelativeUrl.Substring(web.ServerRelativeUrl.Length + 1)));
+            }
+
+            if (web.IsSubSite())
+            {
+                // Add lists from rootweb
+                var rootWeb = (web.Context as ClientContext).Site.RootWeb;
+                rootWeb.EnsureProperty(w => w.ServerRelativeUrl);
+                rootWeb.Context.Load(rootWeb.Lists, ls => ls.Include(l => l.Id, l => l.Title, l => l.RootFolder.ServerRelativeUrl));
+                rootWeb.Context.ExecuteQueryRetry();
+                foreach (var rootList in rootWeb.Lists)
+                {
+                    // token already there? Skip the list
+                    if (web.Lists.FirstOrDefault(l => l.Title == rootList.Title) == null)
+                    {
+                        _tokens.Add(new ListIdToken(web, rootList.Title, rootList.Id));
+                        _tokens.Add(new ListUrlToken(web, rootList.Title, rootList.RootFolder.ServerRelativeUrl.Substring(rootWeb.ServerRelativeUrl.Length + 1)));
+                    }
+                }
             }
 
             // Add ContentTypes
@@ -88,6 +109,11 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             // Add TermSetIds
             TaxonomySession session = TaxonomySession.GetTaxonomySession(web.Context);
 
+            var termStores = session.EnsureProperty(s => s.TermStores);
+            foreach (var ts in termStores)
+            {
+                _tokens.Add(new TermStoreIdToken(web, ts.Name, ts.Id));
+            }
             var termStore = session.GetDefaultSiteCollectionTermStore();
             web.Context.Load(termStore);
             web.Context.ExecuteQueryRetry();
@@ -112,6 +138,28 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
             _tokens.Add(new SiteCollectionTermGroupIdToken(web));
             _tokens.Add(new SiteCollectionTermGroupNameToken(web));
+
+            // Fields
+            var fields = web.Fields;
+            web.Context.Load(fields, flds => flds.Include(f => f.Title, f => f.InternalName));
+            web.Context.ExecuteQueryRetry();
+            foreach (var field in fields)
+            {
+                _tokens.Add(new FieldTitleToken(web, field.InternalName, field.Title));
+            }
+
+            if (web.IsSubSite())
+            {
+                // SiteColumns from rootsite
+                var rootWeb = (web.Context as ClientContext).Site.RootWeb;
+                var siteColumns = rootWeb.Fields;
+                web.Context.Load(siteColumns, flds => flds.Include(f => f.Title, f => f.InternalName));
+                web.Context.ExecuteQueryRetry();
+                foreach (var field in siteColumns)
+                {
+                    _tokens.Add(new FieldTitleToken(rootWeb, field.InternalName, field.Title));
+                }
+            }
 
             // Handle resources
             if (template.Localizations.Any())
@@ -145,9 +193,15 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 
                     _tokens.Add(token);
                 }
-                
-
             }
+
+            // OOTB Roledefs
+            web.EnsureProperty(w => w.RoleDefinitions.Include(r => r.RoleTypeKind));
+            foreach (var roleDef in web.RoleDefinitions.AsEnumerable().Where(r => r.RoleTypeKind != RoleType.None))
+            {
+                _tokens.Add(new RoleDefinitionToken(web, roleDef));
+            }
+
             var sortedTokens = from t in _tokens
                                orderby t.GetTokenLength() descending
                                select t;
@@ -155,16 +209,16 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             _tokens = sortedTokens.ToList();
         }
 
-     
 
-        public List<Tuple<string,string>> GetResourceTokenResourceValues(string tokenValue)
+
+        public List<Tuple<string, string>> GetResourceTokenResourceValues(string tokenValue)
         {
             List<Tuple<string, string>> resourceValues = new List<Tuple<string, string>>();
             var resourceTokens = _tokens.Where(t => t is LocalizationToken && t.GetTokens().Contains(tokenValue));
-            foreach(LocalizationToken resourceToken in resourceTokens)
+            foreach (LocalizationToken resourceToken in resourceTokens)
             {
                 var entries = resourceToken.ResourceEntries;
-                foreach(var entry in entries)
+                foreach (var entry in entries)
                 {
                     CultureInfo ci = new CultureInfo((int)entry.LCID);
                     resourceValues.Add(new Tuple<string, string>(ci.Name, entry.Value));
@@ -191,6 +245,21 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             return ParseString(input, null);
         }
 
+        public IEnumerable<string> GetLeftOverTokens(string input)
+        {
+            List<string> values = new List<string>();
+            var matches = Regex.Matches(input, "(?<guid>\\{\\S{8}-\\S{4}-\\S{4}-\\S{4}-\\S{12}?\\})|(?<token>\\{.+?\\})").OfType<Match>().Select(m => m.Value);
+            foreach (var match in matches)
+            {
+                Guid gout;
+                if (!Guid.TryParse(match, out gout))
+                {
+                    values.Add(match);
+                }
+            }
+            return values;
+        }
+
         public string ParseString(string input, params string[] tokensToSkip)
         {
             var origInput = input;
@@ -214,7 +283,8 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                     }
                     else
                     {
-                        foreach (var regex in token.GetRegex().Where(regex => regex.IsMatch(input)))
+                        var matchingTokens = token.GetRegex().Where(regex => regex.IsMatch(input));
+                        foreach (var regex in matchingTokens)
                         {
                             input = regex.Replace(input, token.GetReplaceValue());
                         }
@@ -256,3 +326,4 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         }
     }
 }
+

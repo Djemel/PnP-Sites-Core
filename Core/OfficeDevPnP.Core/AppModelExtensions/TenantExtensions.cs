@@ -19,7 +19,7 @@ namespace Microsoft.SharePoint.Client
         const string SITE_STATUS_CREATING = "Creating"; 
         const string SITE_STATUS_RECYCLED = "Recycled"; 
 
-#if !CLIENTSDKV15
+#if !ONPREMISES
         #region Site collection creation
         /// <summary>
         /// Adds a SiteEntity by launching site collection creation and waits for the creation to finish
@@ -672,7 +672,10 @@ namespace Microsoft.SharePoint.Client
         {
             if (ex is ServerException)
             {
-                if (((ServerException)ex).ServerErrorCode == -2147024809 && ((ServerException)ex).ServerErrorTypeName.Equals("System.ArgumentException", StringComparison.InvariantCultureIgnoreCase))
+                if (
+                     (((ServerException)ex).ServerErrorCode == -2147024809 && ((ServerException)ex).ServerErrorTypeName.Equals("System.ArgumentException", StringComparison.InvariantCultureIgnoreCase)) ||
+                     (((ServerException)ex).ServerErrorCode == -1 && ((ServerException)ex).ServerErrorTypeName.Equals("Microsoft.Online.SharePoint.Common.SpoNoSiteException", StringComparison.InvariantCultureIgnoreCase))                    
+                    )
                 {
                     return true;
                 }
@@ -691,7 +694,11 @@ namespace Microsoft.SharePoint.Client
         {
             if (ex is ServerException)
             {
-                if (((ServerException)ex).ServerErrorCode == -1 && ((ServerException)ex).ServerErrorTypeName.Equals("Microsoft.Online.SharePoint.Common.SpoException", StringComparison.InvariantCultureIgnoreCase))
+                if (((ServerException)ex).ServerErrorCode == -1 
+                    && (
+                        ((ServerException)ex).ServerErrorTypeName.Equals("Microsoft.Online.SharePoint.Common.SpoException", StringComparison.InvariantCultureIgnoreCase) ||
+                        ((ServerException)ex).ServerErrorTypeName.Equals("Microsoft.Online.SharePoint.Common.SpoNoSiteException", StringComparison.InvariantCultureIgnoreCase))
+                    )
                 {
                     return true;
                 }

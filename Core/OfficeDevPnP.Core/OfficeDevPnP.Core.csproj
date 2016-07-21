@@ -17,7 +17,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;CODE_ANALYSIS</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;CODE_ANALYSIS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -42,7 +42,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug15\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;CODE_ANALYSIS;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;CODE_ANALYSIS;ONPREMISES;SP2013</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <RunCodeAnalysis>true</RunCodeAnalysis>
@@ -55,7 +55,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release15\</OutputPath>
-    <DefineConstants>TRACE;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;ONPREMISES;SP2013</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\Release15\OfficeDevPnP.Core.XML</DocumentationFile>
@@ -65,7 +65,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug16|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug16\</OutputPath>
-    <DefineConstants>CODE_ANALYSIS;TRACE;DEBUG;CODE_ANALYSIS;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;CODE_ANALYSIS;ONPREMISES;SP2016</DefineConstants>
     <DocumentationFile>bin\Debug16\OfficeDevPnP.Core.XML</DocumentationFile>
     <NoWarn>1591</NoWarn>
     <DebugType>full</DebugType>
@@ -77,7 +77,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release16|AnyCPU'">
     <OutputPath>bin\Release16\</OutputPath>
-    <DefineConstants>TRACE;CLIENTSDKV15</DefineConstants>
+    <DefineConstants>TRACE;ONPREMISES;SP2016</DefineConstants>
     <DocumentationFile>bin\Release16\OfficeDevPnP.Core.XML</DocumentationFile>
     <Optimize>true</Optimize>
     <NoWarn>1591</NoWarn>
@@ -329,11 +329,13 @@
     </Reference>
     <Reference Include="System.Web.Services" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppModelExtensions\ClientContextExtensions.cs" />
@@ -418,6 +420,7 @@
     <Compile Include="Extensions\SafeConvertExtensions.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Extensions\StreamExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
     <Compile Include="CoreResources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -428,7 +431,21 @@
     <Compile Include="Framework\Provisioning\Connectors\AzureStorageConnector.cs" />
     <Compile Include="Framework\Provisioning\Connectors\FileConnectorBase.cs" />
     <Compile Include="Framework\Provisioning\Connectors\FileSystemConnector.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\ICommitableFileConnector.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXMLConnector.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\Model\PnPFileInfo.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\Model\PnPFileMap.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\Model\PnPInfo.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\Model\PnPManifest.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\Model\PnPProperties.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\PnPPackage.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\PnPPackageFileItem.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\PnPPackageFormatException.cs" />
+    <Compile Include="Framework\Provisioning\Connectors\OpenXML\PnPPackageHelper.cs" />
     <Compile Include="Framework\Provisioning\Connectors\SharePointConnector.cs" />
+    <Compile Include="Framework\Provisioning\Deprecated\Connectors\OpenXML\PnPPackage.cs" />
+    <Compile Include="Framework\Provisioning\Deprecated\Extensibility\ExtensibilityManager.deprecated.cs" />
+    <Compile Include="Framework\Provisioning\Deprecated\Extensibility\IProvisioningExtensibilityProvider.deprecated.cs" />
     <Compile Include="Framework\Provisioning\Deprecated\Model\ComposedLook.deprecated.cs" />
     <Compile Include="Framework\Provisioning\Deprecated\Model\ContentType.deprecated.cs" />
     <Compile Include="Framework\Provisioning\Deprecated\Model\ContentTypeBinding.deprecated.cs" />
@@ -445,9 +462,14 @@
     <Compile Include="Framework\Provisioning\Extensibility\ExtensibilityManager.cs" />
     <Compile Include="Framework\Provisioning\Extensibility\ExtensiblityPipelineException.cs" />
     <Compile Include="Framework\Provisioning\Extensibility\IProvisioningExtensibilityTokenProvider.cs" />
-    <Compile Include="Framework\Provisioning\Extensibility\IProvisioningExtensibilityProvider.cs" />
+    <Compile Include="Framework\Provisioning\Extensibility\IProvisioningExtensibilityHandler.cs" />
+    <Compile Include="Framework\Provisioning\Model\BaseNavigationKind.cs" />
+    <Compile Include="Framework\Provisioning\Model\CurrentNavigation.cs" />
     <Compile Include="Framework\Provisioning\Model\DefaultDocumentCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\Deprecated\CustomAction.deprecated.cs" />
+    <Compile Include="Framework\Provisioning\Model\Directory.cs" />
+    <Compile Include="Framework\Provisioning\Model\DirectoryCollection.cs" />
+    <Compile Include="Framework\Provisioning\Model\ExtensibilityHandler.cs" />
     <Compile Include="Framework\Provisioning\Model\FeatureCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\AddIn.cs" />
     <Compile Include="Framework\Provisioning\Model\AddInCollection.cs" />
@@ -474,18 +496,25 @@
     <Compile Include="Framework\Provisioning\Model\FieldRefCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\FieldCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\FileCollection.cs" />
+    <Compile Include="Framework\Provisioning\Model\FileLevel.cs" />
     <Compile Include="Framework\Provisioning\Model\Folder.cs" />
     <Compile Include="Framework\Provisioning\Model\FolderCollection.cs" />
+    <Compile Include="Framework\Provisioning\Model\GlobalNavigation.cs" />
     <Compile Include="Framework\Provisioning\Model\IProvisioningTemplateDescendant.cs" />
     <Compile Include="Framework\Provisioning\Model\ListInstanceCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\Localization.cs" />
     <Compile Include="Framework\Provisioning\Model\Handlers.cs" />
     <Compile Include="Framework\Provisioning\Model\LocalizationCollection.cs" />
+    <Compile Include="Framework\Provisioning\Model\ManagedNavigation.cs" />
+    <Compile Include="Framework\Provisioning\Model\Navigation.cs" />
+    <Compile Include="Framework\Provisioning\Model\NavigationNode.cs" />
+    <Compile Include="Framework\Provisioning\Model\NavigationNodeCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\ObjectSecurity.cs" />
     <Compile Include="Framework\Provisioning\Model\PageLayout.cs" />
     <Compile Include="Framework\Provisioning\Model\PageLayoutCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\PageCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\PropertyBagEntryCollection.cs" />
+    <Compile Include="Framework\Provisioning\Model\ExtensibilityHandlerCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\ProviderCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\ProvisioningTemplateDictionary.cs" />
     <Compile Include="Framework\Provisioning\Model\ProvisioningTemplateCollection.cs" />
@@ -498,6 +527,7 @@
     <Compile Include="Framework\Provisioning\Model\SiteSecurityPermissions.cs" />
     <Compile Include="Framework\Provisioning\Model\RegionalSettings.cs" />
     <Compile Include="Framework\Provisioning\Model\SiteGroup.cs" />
+    <Compile Include="Framework\Provisioning\Model\StructuralNavigation.cs" />
     <Compile Include="Framework\Provisioning\Model\SupportedUILanguage.cs" />
     <Compile Include="Framework\Provisioning\Model\SupportedUILanguageCollection.cs" />
     <Compile Include="Framework\Provisioning\Model\TermCollection.cs" />
@@ -533,6 +563,8 @@
     <Compile Include="Framework\Provisioning\ObjectHandlers\Extensions\SecurableObjectExtensions.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectContentHandlerBase.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\Extensions\UserResourceExtensions.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectLocalization.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectNavigation.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectWebSettings.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectPageContents.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectSupportedUILanguages.cs" />
@@ -541,7 +573,7 @@
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectAuditSettings.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectComposedLook.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectContentType.cs" />
-    <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectExtensibilityProviders.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectExtensibilityHandlers.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectListInstanceDataRows.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectSearchSettings.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ObjectSitePolicy.cs" />
@@ -565,14 +597,18 @@
     <Compile Include="Framework\Provisioning\ObjectHandlers\ProvisioningTemplateApplyingInformation.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\ProvisioningTemplateCreationInformation.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\SiteToTemplateConversion.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\AuthenticationRealmToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\CDATAEndToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\CDATAStartToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\CurrentUserFullNameToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\CurrentUserLoginNameToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\KeywordsTermStoreIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\ContentTypeIdToken.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\RoleDefinitionToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\LocalizationToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\ResourceEntry.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\FieldTitleToken.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\TermStoreIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\WebPartIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteCollectionTermGroupNameToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteCollectionTermGroupId.cs" />
@@ -596,11 +632,13 @@
     <Compile Include="Framework\Provisioning\Providers\Json\BasePermissionsConverter.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonAzureStorageTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonFileSystemTemplateProvider.cs" />
+    <Compile Include="Framework\Provisioning\Providers\Json\JsonOpenXMLTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonPnPFormatter.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonSharePointTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Json\JsonTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\TemplateProviderBase.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\IXMLSchemaFormatter.cs" />
+    <Compile Include="Framework\Provisioning\Providers\ITemplateProviderExtension.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2015-03.cs">
       <DependentUpon>ProvisioningSchema-2015-03.xsd</DependentUpon>
     </Compile>
@@ -613,13 +651,19 @@
     <Compile Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2015-12.cs">
       <DependentUpon>ProvisioningSchema-2015-12.xsd</DependentUpon>
     </Compile>
+    <Compile Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2016-05.extensions.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2015-12.extensions.cs" />
+    <Compile Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2016-05.cs">
+      <DependentUpon>ProvisioningSchema-2016-05.xsd</DependentUpon>
+    </Compile>
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLAzureStorageTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLConstants.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLEnums.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLExtensions.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLFileSystemTemplateProvider.cs" />
+    <Compile Include="Framework\Provisioning\Providers\Xml\XMLOpenXMLTemplateProvider.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLPnPSchemaFormatter.cs" />
+    <Compile Include="Framework\Provisioning\Providers\Xml\XMLPnPSchemaV201605Formatter.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLPnPSchemaV201512Formatter.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLPnPSchemaV201508Formatter.cs" />
     <Compile Include="Framework\Provisioning\Providers\Xml\XMLPnPSchemaV201505Formatter.cs" />
@@ -630,6 +674,7 @@
     <Compile Include="Framework\TimerJobs\TimerJob.cs" />
     <Compile Include="Framework\TimerJobs\TimerJobRun.cs" />
     <Compile Include="Framework\TimerJobs\TimerJobRunEventArgs.cs" />
+    <Compile Include="AppModelExtensions\PnPClientContext.cs" />
     <Compile Include="Utilities\CookieReader.cs" />
     <Compile Include="Utilities\Deprecated\Utility.deprecated.cs" />
     <Compile Include="Utilities\FileTokenCache.cs" />
@@ -653,6 +698,7 @@
     <Compile Include="Diagnostics\Tree\Tree.cs" />
     <Compile Include="Diagnostics\Tree\TreeNode.cs" />
     <Compile Include="Diagnostics\Tree\TreeNodeList.cs" />
+    <Compile Include="Utilities\PnPCoreUtilities.cs" />
     <Compile Include="Utilities\XMLSerializer.cs" />
     <Compile Include="Web References\UPAWebService\Reference.cs">
       <AutoGen>True</AutoGen>
@@ -702,6 +748,9 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2015-12.xsd">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Framework\Provisioning\Providers\Xml\ProvisioningSchema-2016-05.xsd">
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <None Include="Framework\Provisioning\Providers\Xml\readme.md" />
@@ -833,7 +882,11 @@
     <Content Include="Framework\Provisioning\BaseTemplates\v16_0\SRCHCENTERLITE0Template.xml" />
     <Content Include="Framework\Provisioning\BaseTemplates\v16_0\STS1Template.xml" />
     <Content Include="Framework\Provisioning\BaseTemplates\v16_0\VISPRUS0Template.xml" />
+    <Content Include="pnp.ico" />
+    <None Include="Resources\SP-Responsive-UI_CSS.css" />
+    <None Include="Resources\SP-Responsive-UI.js" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <TFSBaseBuildYear>2014</TFSBaseBuildYear>
@@ -848,7 +901,8 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>Powershell.exe -ExecutionPolicy Unrestricted -file "$(SolutionDir)xmldoc2md.ps1" -xml "$(TargetDir)OfficeDevPnP.Core.XML" -xsl "$(SolutionDir)xmldoc2md.xsl" -output "$(SolutionDir)Documentation.md"</PostBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
