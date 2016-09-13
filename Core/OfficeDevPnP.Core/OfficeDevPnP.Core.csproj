@@ -306,6 +306,7 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.EnterpriseServices" />
     <Reference Include="System.IdentityModel" />
     <Reference Include="System.IdentityModel.Selectors" />
@@ -604,10 +605,12 @@
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\CurrentUserLoginNameToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\KeywordsTermStoreIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\ContentTypeIdToken.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\GroupIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\RoleDefinitionToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\LocalizationToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\ResourceEntry.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\FieldTitleToken.cs" />
+    <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteCollectionIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\TermStoreIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\WebPartIdToken.cs" />
     <Compile Include="Framework\Provisioning\ObjectHandlers\TokenDefinitions\SiteCollectionTermGroupNameToken.cs" />

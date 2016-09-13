@@ -359,12 +359,33 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         private static Stream GetFileStream(ProvisioningTemplate template, Model.File file)
         {
             var fileName = file.Src;
-            var stream = template.Connector.GetFileStream(fileName);
+            var container = String.Empty;
+            if (fileName.Contains(@"\") || fileName.Contains(@"/"))
+            {
+                var tempFileName = fileName.Replace(@"/", @"\");
+                container = fileName.Substring(0, tempFileName.LastIndexOf(@"\"));
+                fileName = fileName.Substring(tempFileName.LastIndexOf(@"\") + 1);
+            }
+            
+            // add the default provided container (if any)
+            if (!String.IsNullOrEmpty(container))
+            {
+                if (!String.IsNullOrEmpty(template.Connector.GetContainer()))
+                {
+                    container = String.Format(@"{0}\{1}", template.Connector.GetContainer(), container);
+                }               
+            }
+            else
+            {
+                container = template.Connector.GetContainer();
+            }
+
+            var stream = template.Connector.GetFileStream(fileName, container);
             if (stream == null)
             {
                 //Decode the URL and try again
                 fileName = WebUtility.UrlDecode(fileName);
-                stream = template.Connector.GetFileStream(fileName);
+                stream = template.Connector.GetFileStream(fileName, container);
             }
 
             return stream;
