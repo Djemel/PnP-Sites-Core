@@ -15,6 +15,7 @@ using System.Text;
 using OfficeDevPnP.Core.Utilities;
 using Microsoft.SharePoint.Client.Publishing.Navigation;
 using Microsoft.SharePoint.Client.Taxonomy;
+using OfficeDevPnP.Core.Utilities.WebParts;
 
 namespace Microsoft.SharePoint.Client
 {
@@ -162,11 +163,7 @@ namespace Microsoft.SharePoint.Client
             web.Context.Load(webPartPage);
             web.Context.ExecuteQueryRetry();
 
-            LimitedWebPartManager limitedWebPartManager = webPartPage.GetLimitedWebPartManager(PersonalizationScope.Shared);
-            WebPartDefinition oWebPartDefinition = limitedWebPartManager.ImportWebPart(webPart.WebPartXml);
-
-            limitedWebPartManager.AddWebPart(oWebPartDefinition.WebPart, webPart.WebPartZone, webPart.WebPartIndex);
-            web.Context.ExecuteQueryRetry();
+            AddWebPart(webPartPage, webPart, webPart.WebPartZone, webPart.WebPartIndex);
         }
 
         /// <summary>
@@ -251,11 +248,7 @@ namespace Microsoft.SharePoint.Client
 
             string wikiField = (string)webPartPage.ListItemAllFields["WikiField"];
 
-            LimitedWebPartManager limitedWebPartManager = webPartPage.GetLimitedWebPartManager(PersonalizationScope.Shared);
-            WebPartDefinition oWebPartDefinition = limitedWebPartManager.ImportWebPart(webPart.WebPartXml);
-            WebPartDefinition wpdNew = limitedWebPartManager.AddWebPart(oWebPartDefinition.WebPart, "wpz", 0);
-            web.Context.Load(wpdNew);
-            web.Context.ExecuteQueryRetry();
+            var wpdNew = AddWebPart(webPartPage, webPart, "wpz", 0);
 
             //HTML structure in default team site home page (W16)
             //<div class="ExternalClass284FC748CB4242F6808DE69314A7C981">
@@ -975,6 +968,34 @@ namespace Microsoft.SharePoint.Client
             SetWebPartPropertyInternal(web, key, value, id, serverRelativePageUrl);
         }
 
+        /// <summary>
+        /// Sets a web part property
+        /// </summary>
+        /// <param name="web">The web to process</param>
+        /// <param name="key">The key to update</param>
+        /// <param name="value">The value to set</param>
+        /// <param name="id">The id of the webpart</param>
+        /// <param name="serverRelativePageUrl"></param>
+        /// <exception cref="System.ArgumentException">Thrown when key or serverRelativePageUrl is a zero-length string or contains only white space</exception>
+        /// <exception cref="System.ArgumentNullException">Thrown when key or serverRelativePageUrl is null</exception>
+        public static void SetWebPartProperty(this Web web, string key, bool value, Guid id, string serverRelativePageUrl)
+        {
+            SetWebPartPropertyInternal(web,key,value,id,serverRelativePageUrl);
+        }
+
+	    private static WebPartDefinition AddWebPart(File webPartPage, WebPartEntity webPart, string zoneId, int zoneIndex)
+	    {
+            var limitedWebPartManager = webPartPage.GetLimitedWebPartManager(PersonalizationScope.Shared);
+            var oWebPartDefinition = limitedWebPartManager.ImportWebPart(webPart.WebPartXml);
+
+            var wpdNew = limitedWebPartManager.AddWebPart(oWebPartDefinition.WebPart, zoneId, zoneIndex);
+            webPartPage.Context.Load(wpdNew);
+            webPartPage.Context.ExecuteQueryRetry();
+
+	        WebPartPostProcessorFactory.Resolve(webPart.WebPartXml).Process(wpdNew, webPartPage);
+
+            return wpdNew;
+	    }
 
         private static void SetWebPartPropertyInternal(this Web web, string key, object value, Guid id, string serverRelativePageUrl)
         {

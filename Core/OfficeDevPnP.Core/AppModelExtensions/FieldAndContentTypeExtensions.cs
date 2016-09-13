@@ -346,6 +346,25 @@ namespace Microsoft.SharePoint.Client
             ct.Context.ExecuteQueryRetry();
             return results.FirstOrDefault() != null;
         }
+        
+        /// <summary>
+        /// Checks if a field exists in a content type by id
+        /// </summary>
+        /// <param name="contentType">The content type to check</param>
+        /// <param name="fieldName">The name of the field to look for</param>
+        /// <returns>True if field exists in content type, otherwise false</returns>
+        public static bool FieldExistsByNameInContentType(this ContentType contentType, string fieldName)
+        {
+            if (string.IsNullOrEmpty(fieldName))
+            {
+                throw new ArgumentNullException("fieldName");
+            }
+
+            var fields = contentType.Fields;
+            var results = contentType.Context.LoadQuery(fields.Where(item => item.InternalName == fieldName));
+            contentType.Context.ExecuteQueryRetry();
+            return results.FirstOrDefault() != null;
+        }
 
         /// <summary>
         /// Adds jsLink to a field.
@@ -1283,7 +1302,7 @@ namespace Microsoft.SharePoint.Client
         /// </summary>
         /// <param name="web">Web to delete the content type from</param>
         /// <param name="contentTypeName">Name of the content type to delete</param>
-        internal static void DeleteContentTypeByName(this Web web, string contentTypeName)
+        public static void DeleteContentTypeByName(this Web web, string contentTypeName)
         {
             var contentTypes = web.Context.LoadQuery(web.ContentTypes.Where(c => c.Name == contentTypeName));
             web.Context.ExecuteQueryRetry();
@@ -1305,7 +1324,7 @@ namespace Microsoft.SharePoint.Client
         /// </summary>
         /// <param name="web">Web to delete the content type from</param>
         /// <param name="contentTypeId">Id of the content type to delete</param>
-        internal static void DeleteContentTypeById(this Web web, string contentTypeId)
+        public static void DeleteContentTypeById(this Web web, string contentTypeId)
         {
             var contentType = GetContentTypeById(web, contentTypeId);
             if (contentType == null)
@@ -1453,7 +1472,7 @@ namespace Microsoft.SharePoint.Client
             // Get list instances
             var list = web.GetListByTitle(listTitle);
             // Get content type instance
-            var contentType = GetContentTypeByName(web, contentTypeName);
+            var contentType = GetContentTypeByName(web, contentTypeName,true);
             // Remove content type from list
             RemoveContentTypeFromList(web, list, contentType);
 
@@ -1470,7 +1489,7 @@ namespace Microsoft.SharePoint.Client
             if (string.IsNullOrEmpty(contentTypeName))
                 throw new ArgumentNullException("contentTypeName");
             // Get content type instance
-            var contentType = GetContentTypeByName(web, contentTypeName);
+            var contentType = GetContentTypeByName(web, contentTypeName,true);
             // Remove content type from list
             RemoveContentTypeFromList(web, list, contentType);
 
@@ -1486,7 +1505,7 @@ namespace Microsoft.SharePoint.Client
         {
             // Get list instances
             var list = web.GetListByTitle(listTitle);
-            var contentType = GetContentTypeById(web, contentTypeId);
+            var contentType = GetContentTypeById(web, contentTypeId,true);
             // Remove content type from list
             RemoveContentTypeFromList(web, list, contentType);
         }
@@ -1501,7 +1520,7 @@ namespace Microsoft.SharePoint.Client
         {
             if (string.IsNullOrEmpty(contentTypeId))
                 throw new ArgumentNullException("contentTypeId");
-            var contentType = GetContentTypeById(web, contentTypeId);
+            var contentType = GetContentTypeById(web, contentTypeId,true);
             // Remove content type from list
             RemoveContentTypeFromList(web, list, contentType);
         }
